@@ -13,7 +13,8 @@ export class RoomStore {
       status: 'waiting',
       players: [host],
       engine: null,
-      processedActionIds: new Set()
+      processedActionIds: new Set(),
+      turnTimer: null
     };
     this.rooms.set(roomId, room);
     return room;
@@ -28,11 +29,11 @@ export class RoomStore {
     if (!room) {
       throw new Error('Room not found');
     }
-    if (room.status !== 'waiting') {
-      throw new Error('Room already started');
-    }
     if (room.players.find((p) => p.playerId === player.playerId)) {
       return room;
+    }
+    if (room.status !== 'waiting') {
+      throw new Error('Room already started');
     }
     if (room.players.length >= 4) {
       throw new Error('Room is full');
@@ -65,6 +66,25 @@ export class RoomStore {
     return room;
   }
 
+  finishGame(roomId) {
+    const room = this.getRoom(roomId);
+    if (!room) {
+      throw new Error('Room not found');
+    }
+    room.status = 'finished';
+    room.turnTimer = null;
+    return room;
+  }
+
+  setTurnTimer(roomId, timer) {
+    const room = this.getRoom(roomId);
+    if (!room) {
+      throw new Error('Room not found');
+    }
+    room.turnTimer = timer;
+    return room;
+  }
+
   checkAndRecordAction(roomId, actionId) {
     if (actionId === null || actionId === undefined) return false;
     const room = this.getRoom(roomId);
@@ -83,6 +103,7 @@ export class RoomStore {
       roomId: room.roomId,
       status: room.status,
       players: room.players,
+      turnTimer: room.turnTimer,
       gameState: room.engine?.getState() ?? null
     };
   }

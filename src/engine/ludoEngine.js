@@ -127,6 +127,23 @@ export class LudoEngine {
     };
   }
 
+  skipTurn(playerId, reason = 'timeout') {
+    if (this.state.status === 'finished') {
+      throw new Error('Game already finished');
+    }
+    this.ensureTurn(playerId);
+    const previousDice = this.state.lastDice;
+    this.state.lastDice = null;
+    this.state.currentTurn = (this.state.currentTurn + 1) % this.state.playerOrder.length;
+    return {
+      type: 'turnSkipped',
+      playerId,
+      reason,
+      previousDice,
+      nextTurnPlayerId: this.state.playerOrder[this.state.currentTurn]
+    };
+  }
+
   finishTurn(dice) {
     this.state.lastDice = null;
     if (this.state.status === 'finished') return;
