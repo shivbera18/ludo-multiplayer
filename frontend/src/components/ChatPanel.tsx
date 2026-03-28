@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react';
 import type { ChatMessage } from '../types';
+import { Button } from './ui/button';
+import { Textarea } from './ui/textarea';
 
 interface ChatPanelProps {
   roomId: string | null;
@@ -68,8 +70,8 @@ export function ChatPanel({ roomId, playerId, messages, onSendMessage, isSubmitt
       </div>
 
       <div className="mt-3 grid gap-2 border-t border-amber-200 pt-3">
-        <textarea
-          className="input min-h-20 resize-none"
+        <Textarea
+          className="min-h-20 resize-none"
           value={draft}
           onChange={(event) => setDraft(event.target.value)}
           maxLength={320}
@@ -78,14 +80,13 @@ export function ChatPanel({ roomId, playerId, messages, onSendMessage, isSubmitt
         />
         <div className="flex items-center justify-between gap-2">
           <span className="text-xs text-slate-500">{draft.length}/320</span>
-          <button
-            className="btn-primary"
+          <Button
             type="button"
             onClick={() => void handleSend()}
             disabled={!roomId || !draft.trim() || isSubmitting}
           >
             Send
-          </button>
+          </Button>
         </div>
       </div>
     </section>

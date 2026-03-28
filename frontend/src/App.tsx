@@ -5,6 +5,8 @@ import { LudoBoard } from './components/LudoBoard';
 import { ReplayViewer } from './components/ReplayViewer';
 import { RoomPanel } from './components/RoomPanel';
 import { TurnControls } from './components/TurnControls';
+import { Button } from './components/ui/button';
+import { Input } from './components/ui/input';
 import { loginAccount, registerAccount } from './services/authApi';
 import { fetchReplay } from './services/replayApi';
 import { createSocketClient } from './services/socketClient';
@@ -330,23 +332,17 @@ function App() {
           >
             <label className="grid gap-1 text-sm font-medium text-slate-700">
               Username
-              <input className="input" value={username} onChange={(event) => setUsername(event.target.value)} required />
+              <Input value={username} onChange={(event) => setUsername(event.target.value)} required />
             </label>
             {isRegisterMode ? (
               <label className="grid gap-1 text-sm font-medium text-slate-700">
                 Display name
-                <input
-                  className="input"
-                  value={displayName}
-                  onChange={(event) => setDisplayName(event.target.value)}
-                  required
-                />
+                <Input value={displayName} onChange={(event) => setDisplayName(event.target.value)} required />
               </label>
             ) : null}
             <label className="grid gap-1 text-sm font-medium text-slate-700">
               Password
-              <input
-                className="input"
+              <Input
                 type="password"
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
@@ -359,11 +355,11 @@ function App() {
             ) : null}
 
             <div className="flex flex-wrap gap-2">
-              <button className="btn-primary" disabled={authBusy} type="submit">
+              <Button disabled={authBusy} type="submit">
                 {authBusy ? 'Please wait…' : isRegisterMode ? 'Register and enter lobby' : 'Login'}
-              </button>
-              <button
-                className="btn-secondary"
+              </Button>
+              <Button
+                variant="secondary"
                 disabled={authBusy}
                 type="button"
                 onClick={() => {
@@ -372,7 +368,7 @@ function App() {
                 }}
               >
                 {isRegisterMode ? 'Already have an account? Login' : 'Need an account? Register'}
-              </button>
+              </Button>
             </div>
           </form>
         </section>
@@ -392,9 +388,9 @@ function App() {
           <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-right text-sm text-slate-800">
             <p className="font-semibold">{auth.user.displayName}</p>
             <p className="text-xs text-slate-600">@{auth.user.username}</p>
-            <button className="btn-secondary mt-2" type="button" onClick={logout}>
+            <Button className="mt-2" variant="secondary" type="button" onClick={logout}>
               Logout
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -462,20 +458,27 @@ function App() {
             {roomChoice === 'join' ? (
               <label className="grid gap-1 text-sm font-medium text-slate-700">
                 Room id
-                <input
-                  className="input"
-                  value={roomInput}
-                  onChange={(event) => setRoomInput(event.target.value)}
-                  placeholder="Paste room id"
-                />
+                <Input value={roomInput} onChange={(event) => setRoomInput(event.target.value)} placeholder="Paste room id" />
               </label>
             ) : null}
 
             <div className="flex flex-wrap gap-2">
-              <button className="btn-primary" type="button" onClick={() => void createOrJoinRoom()} disabled={state.isSubmitting}>
+              <Button type="button" onClick={() => void createOrJoinRoom()} disabled={state.isSubmitting}>
                 {state.isSubmitting ? 'Please wait…' : roomChoice === 'create' ? 'Create room now' : 'Join room now'}
-              </button>
+              </Button>
             </div>
+          </div>
+
+          <div className="mt-4">
+            <LudoBoard
+              room={null}
+              gameState={null}
+              myPlayerId={playerId}
+              movableTokens={[]}
+              isMyTurn={false}
+              isSubmitting={false}
+              onMoveToken={async () => undefined}
+            />
           </div>
         </section>
       ) : null}
@@ -534,8 +537,6 @@ function App() {
                 playerName={playerName}
                 roomInput={roomInput}
                 isSubmitting={state.isSubmitting}
-                onPlayerIdChange={() => undefined}
-                onPlayerNameChange={() => undefined}
                 onRoomInputChange={setRoomInput}
                 onCreateRoom={() => createOrJoinRoom('create')}
                 onJoinRoom={() => createOrJoinRoom('join')}

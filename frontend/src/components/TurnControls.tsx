@@ -1,3 +1,5 @@
+import { Button } from './ui/button';
+
 interface TurnControlsProps {
   isMyTurn: boolean;
   canRoll: boolean;
@@ -39,9 +41,9 @@ export function TurnControls({
       </div>
 
       <div className="mt-3 flex flex-wrap gap-2">
-        <button className="btn-primary" onClick={() => void onRollDice()} disabled={!canRoll || isSubmitting}>
+        <Button onClick={() => void onRollDice()} disabled={!canRoll || isSubmitting}>
           {isSubmitting ? 'Rolling…' : 'Roll dice'}
-        </button>
+        </Button>
       </div>
 
       <div className="mt-3 flex flex-wrap gap-2">
@@ -58,14 +60,14 @@ export function TurnControls({
 
       <div className="mt-2 flex flex-wrap gap-2">
         {movableTokens.map((tokenIndex) => (
-          <button
+          <Button
             key={tokenIndex}
-            className="btn-secondary"
+            variant="secondary"
             onClick={() => void onMoveToken(tokenIndex)}
             disabled={!isMyTurn || isSubmitting}
           >
             Move token #{tokenIndex + 1}
-          </button>
+          </Button>
         ))}
       </div>
     </section>

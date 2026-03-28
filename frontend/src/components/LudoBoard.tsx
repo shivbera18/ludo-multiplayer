@@ -97,33 +97,46 @@ function laneClass(x: number, y: number): string {
 }
 
 export function LudoBoard({ room, gameState, myPlayerId, movableTokens, isMyTurn, isSubmitting, onMoveToken }: LudoBoardProps) {
-  if (!room) {
-    return (
-      <section className="panel animate-floatIn">
-        <h2 className="font-display text-lg font-bold text-slate-900">Ludo board</h2>
-        <p className="mt-2 text-sm text-slate-700">Choose create or join to load your board.</p>
-      </section>
-    );
+  const fallbackMeId = myPlayerId || 'you';
+  const basePlayers = room?.players ?? [{ playerId: fallbackMeId, name: 'You' }];
+  const previewPlayers = [...basePlayers];
+  const previewNames = ['Scarlet', 'Emerald', 'Amber'];
+  for (let i = previewPlayers.length; i < 4; i += 1) {
+    previewPlayers.push({
+      playerId: `preview-bot-${i}`,
+      name: previewNames[i - 1] ?? `Player ${i + 1}`
+    });
   }
 
-  if (!gameState) {
-    return (
-      <section className="panel animate-floatIn">
-        <h2 className="font-display text-lg font-bold text-slate-900">Ludo board</h2>
-        <p className="mt-2 text-sm text-slate-700">Room ready. Waiting for host to start game.</p>
-      </section>
-    );
-  }
+  const boardRoom: RoomSnapshot = {
+    roomId: room?.roomId ?? 'preview-room',
+    status: room?.status ?? 'waiting',
+    players: gameState ? basePlayers : previewPlayers,
+    gameState: gameState ?? null
+  };
 
-  const currentTurnPlayerId = getCurrentTurnPlayerId(gameState);
+  const boardState: LudoGameState =
+    gameState ?? {
+      status: 'active',
+      playerOrder: boardRoom.players.slice(0, 4).map((player) => player.playerId),
+      currentTurn: 0,
+      lastDice: null,
+      winner: null,
+      players: Object.fromEntries(
+        boardRoom.players.slice(0, 4).map((player) => [player.playerId, { tokens: [-1, -1, -1, -1] }])
+      )
+    };
+
+  const isLiveGame = Boolean(gameState && room);
+  const currentTurnPlayerId = getCurrentTurnPlayerId(boardState);
 
   const tokensByCell = new Map<string, Array<{ playerId: string; tokenIndex: number; isHome: boolean; position: number }>>();
 
-  gameState.playerOrder.forEach((playerId) => {
-    const player = gameState.players[playerId];
+  boardState.playerOrder.forEach((playerId) => {
+    const player = boardState.players[playerId];
     if (!player) return;
 
-    const playerIndex = getPlayerIndex(gameState, playerId);
+    const playerIndex = getPlayerIndex(boardState, playerId);
     player.tokens.forEach((position, tokenIndex) => {
       let coord: Coord;
       if (position < 0) {
@@ -146,11 +159,16 @@ export function LudoBoard({ room, gameState, myPlayerId, movableTokens, isMyTurn
         <h2 className="font-display text-xl font-bold text-slate-900">Ludo King style board</h2>
         <div className="flex flex-wrap gap-2">
           <span className="rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-semibold text-sky-800">
-            Turn: {getPlayerName(room, currentTurnPlayerId)}
+            Turn: {getPlayerName(boardRoom, currentTurnPlayerId)}
           </span>
-          {gameState.winner ? (
+          {boardState.winner ? (
             <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-800">
-              Winner: {getPlayerName(room, gameState.winner)}
+              Winner: {getPlayerName(boardRoom, boardState.winner)}
+            </span>
+          ) : null}
+          {!isLiveGame ? (
+            <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-800">
+              {room ? 'Waiting for host to start' : 'Board preview: join or create room'}
             </span>
           ) : null}
         </div>
@@ -181,10 +199,11 @@ export function LudoBoard({ room, gameState, myPlayerId, movableTokens, isMyTurn
 
                   <div className="absolute inset-0 flex flex-wrap content-center justify-center gap-[2px] p-[1px]">
                     {tokens.map((token) => {
-                      const pIndex = getPlayerIndex(gameState, token.playerId);
+                      const pIndex = getPlayerIndex(boardState, token.playerId);
                       const style = PLAYER_STYLES[pIndex];
                       const isMine = token.playerId === myPlayerId;
                       const canMove =
+                        isLiveGame &&
                         isMine &&
                         isMyTurn &&
                         movableTokens.includes(token.tokenIndex) &&
@@ -197,7 +216,7 @@ export function LudoBoard({ room, gameState, myPlayerId, movableTokens, isMyTurn
                           className={`flex h-6 w-6 items-center justify-center rounded-full border text-[9px] font-extrabold shadow-sm transition ${
                             style.token
                           } ${canMove ? 'ring-2 ring-yellow-300 hover:scale-110' : 'opacity-95'}`}
-                          title={`${getPlayerName(room, token.playerId)} token ${token.tokenIndex + 1}`}
+                          title={`${getPlayerName(boardRoom, token.playerId)} token ${token.tokenIndex + 1}`}
                           type="button"
                           disabled={!canMove}
                           onClick={() => void onMoveToken(token.tokenIndex)}
@@ -217,12 +236,12 @@ export function LudoBoard({ room, gameState, myPlayerId, movableTokens, isMyTurn
           <div className="rounded-2xl border border-amber-200 bg-white/90 p-3">
             <h3 className="font-display text-sm font-bold text-slate-800">Player houses</h3>
             <div className="mt-2 grid gap-2">
-              {gameState.playerOrder.map((playerId) => {
-                const pIndex = getPlayerIndex(gameState, playerId);
+              {boardState.playerOrder.map((playerId) => {
+                const pIndex = getPlayerIndex(boardState, playerId);
                 const style = PLAYER_STYLES[pIndex];
                 const isTurn = playerId === currentTurnPlayerId;
-                const isWinner = gameState.winner === playerId;
-                const tokens = gameState.players[playerId]?.tokens ?? [];
+                const isWinner = boardState.winner === playerId;
+                const tokens = boardState.players[playerId]?.tokens ?? [];
 
                 return (
                   <article
@@ -232,7 +251,7 @@ export function LudoBoard({ room, gameState, myPlayerId, movableTokens, isMyTurn
                     }`}
                   >
                     <div className="mb-1 flex items-center justify-between">
-                      <p className="text-sm font-semibold text-slate-900">{getPlayerName(room, playerId)}</p>
+                      <p className="text-sm font-semibold text-slate-900">{getPlayerName(boardRoom, playerId)}</p>
                       <span className="text-[11px] font-bold text-slate-700">{isTurn ? 'TURN' : isWinner ? 'WIN' : 'PLAY'}</span>
                     </div>
                     <div className="flex flex-wrap gap-1">

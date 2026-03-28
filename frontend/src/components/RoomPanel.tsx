@@ -1,5 +1,7 @@
 import type { FormEvent } from 'react';
 import type { RoomSnapshot } from '../types';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
 
 interface RoomPanelProps {
   room: RoomSnapshot | null;
@@ -7,8 +9,6 @@ interface RoomPanelProps {
   playerName: string;
   roomInput: string;
   isSubmitting: boolean;
-  onPlayerIdChange: (value: string) => void;
-  onPlayerNameChange: (value: string) => void;
   onRoomInputChange: (value: string) => void;
   onCreateRoom: () => Promise<void>;
   onJoinRoom: () => Promise<void>;
@@ -22,8 +22,6 @@ export function RoomPanel({
   playerName,
   roomInput,
   isSubmitting,
-  onPlayerIdChange,
-  onPlayerNameChange,
   onRoomInputChange,
   onCreateRoom,
   onJoinRoom,
@@ -49,50 +47,31 @@ export function RoomPanel({
       <form onSubmit={handleSubmit} className="mt-3 grid gap-3">
         <label className="grid gap-1 text-sm font-medium text-slate-700">
           Player id
-          <input
-            className="input"
-            value={playerId}
-            onChange={(event) => onPlayerIdChange(event.target.value)}
-            placeholder="player-1"
-            readOnly
-            required
-          />
+          <Input value={playerId} readOnly />
         </label>
         <label className="grid gap-1 text-sm font-medium text-slate-700">
           Display name
-          <input
-            className="input"
-            value={playerName}
-            onChange={(event) => onPlayerNameChange(event.target.value)}
-            placeholder="Player One"
-            readOnly
-            required
-          />
+          <Input value={playerName} readOnly />
         </label>
         <label className="grid gap-1 text-sm font-medium text-slate-700">
           Room id (optional to join)
-          <input
-            className="input"
-            value={roomInput}
-            onChange={(event) => onRoomInputChange(event.target.value)}
-            placeholder="Paste room id to join"
-          />
+          <Input value={roomInput} onChange={(event) => onRoomInputChange(event.target.value)} placeholder="Paste room id to join" />
         </label>
         <div className="flex flex-wrap gap-2">
-          <button className="btn-primary" type="submit" disabled={isSubmitting}>
+          <Button type="submit" disabled={isSubmitting}>
             {hasRoomInput ? 'Join room' : 'Create room'}
-          </button>
-          <button className="btn-primary" type="button" onClick={() => void onStartGame()} disabled={!canStart || isSubmitting}>
+          </Button>
+          <Button type="button" onClick={() => void onStartGame()} disabled={!canStart || isSubmitting}>
             {isHost ? 'Start match' : 'Host starts game'}
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
-            className="btn-secondary"
+            variant="secondary"
             onClick={() => void onCopyRoomId()}
             disabled={!room?.roomId || isSubmitting}
           >
             Copy room id
-          </button>
+          </Button>
         </div>
       </form>
 
