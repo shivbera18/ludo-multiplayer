@@ -38,12 +38,21 @@ export function createRealtimeServer(options = {}) {
   const io = new Server(server, {
     cors: { origin: '*' }
   });
+  const realtimeEmitter = {
+    to(roomId) {
+      return {
+        emit(eventName, payload) {
+          emitRoomEvent(roomId, eventName, payload);
+        }
+      };
+    }
+  };
   const messagingBus = createMessagingBus({
     onBroadcast: ({ roomId, eventName, payload }) => {
       io.to(roomId).emit(eventName, payload);
     }
   });
-  const turnTimerManager = new TurnTimerManager({ roomStore, eventLogStore, io, turnDurationMs });
+  const turnTimerManager = new TurnTimerManager({ roomStore, eventLogStore, io: realtimeEmitter, turnDurationMs });
   const sessionBySocketId = new Map();
   const socketIdByRoomPlayer = new Map();
 
