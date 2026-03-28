@@ -79,4 +79,48 @@ Current architecture follows core PRD patterns for MVP:
 4. **Replay consumption**: Frontend fetches replay events through REST API and renders timeline playback data.
 5. **Room isolation**: `RoomStore` keeps game state and deduped action IDs per room.
 
-Future PRD items like durable queues, persistent databases, matchmaking service, and leaderboard service are not yet implemented in this codebase.
+Future PRD items like persistent databases, matchmaking service, and leaderboard service are not yet implemented in this codebase.
+
+## Redis + Kafka integration
+
+The backend now supports:
+
+- **Redis pub/sub** for cross-instance realtime Socket.IO broadcast fanout.
+- **Kafka producer** for domain event stream publishing.
+
+These are enabled via env vars:
+
+- `REDIS_URL` (example: `redis://localhost:6379`)
+- `REDIS_CHANNEL` (optional, default: `ludox:realtime:broadcast`)
+- `KAFKA_BROKERS` (comma-separated, example: `localhost:9092`)
+- `KAFKA_CLIENT_ID` (optional, default: `ludox-backend`)
+- `KAFKA_TOPIC` (optional, default: `ludox.events`)
+
+If none of these are set, backend behavior remains local/in-memory and fully compatible with current tests.
+
+## Docker usage
+
+### 1) Start full stack (frontend + backend + Redis + Kafka)
+
+```bash
+docker compose up --build
+```
+
+### 2) Access services
+
+- Frontend: `http://localhost:5173`
+- Backend: `http://localhost:3000`
+- Redis: `localhost:6379`
+- Kafka broker: `localhost:9092`
+
+### 3) Stop stack
+
+```bash
+docker compose down
+```
+
+### Optional cleanup
+
+```bash
+docker compose down -v
+```

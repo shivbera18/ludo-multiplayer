@@ -10,7 +10,7 @@
     "dev:backend": "node --watch src/index.js",
     "dev:frontend": "npm --prefix frontend run dev",
     "dev": "npm run dev:backend",
-    "build:backend": "node --check src/index.js && node --check src/server.js && node --check src/engine/ludoEngine.js && node --check src/rooms/roomStore.js && node --check src/events/eventLogStore.js && node --check src/realtime/turnTimerManager.js",
+    "build:backend": "node --check src/index.js && node --check src/server.js && node --check src/engine/ludoEngine.js && node --check src/rooms/roomStore.js && node --check src/events/eventLogStore.js && node --check src/realtime/turnTimerManager.js && node --check src/realtime/messagingBus.js",
     "build:frontend": "npm --prefix frontend run build",
     "build": "npm run build:backend && npm run build:frontend",
     "lint:frontend": "npm --prefix frontend run lint",
