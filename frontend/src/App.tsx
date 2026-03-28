@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useReducer, useState } from 'react';
+import { GameTimeline } from './components/GameTimeline';
 import { LudoBoard } from './components/LudoBoard';
 import { ReplayViewer } from './components/ReplayViewer';
 import { RoomPanel } from './components/RoomPanel';
@@ -9,6 +10,7 @@ import {
   gameReducer,
   getCurrentTurnPlayerId,
   getMovableTokenIndexes,
+  getPlayerName,
   initialState
 } from './state/gameState';
 import './index.css';
@@ -60,9 +62,21 @@ function App() {
 
   const currentRoomId = state.room?.roomId ?? null;
   const currentTurnPlayerId = getCurrentTurnPlayerId(state.gameState);
+  const currentTurnPlayerName = getPlayerName(state.room, currentTurnPlayerId);
   const isMyTurn = currentTurnPlayerId === playerId;
   const movableTokens = getMovableTokenIndexes(state.gameState, playerId);
   const canRoll = Boolean(state.room?.roomId && isMyTurn && state.gameState?.lastDice === null);
+
+  useEffect(() => {
+    if (!state.info && !state.error) return;
+    const timeout = window.setTimeout(() => {
+      dispatch({ type: 'message:clear' });
+    }, 3000);
+
+    return () => {
+      window.clearTimeout(timeout);
+    };
+  }, [state.info, state.error]);
 
   async function createOrJoinRoom() {
     dispatch({ type: 'request:start' });
@@ -79,6 +93,7 @@ function App() {
         return;
       }
       dispatch({ type: 'room:update', room: response.room });
+      dispatch({ type: 'info', message: `Joined room ${response.room.roomId}` });
       dispatch({ type: 'request:end' });
       return;
     }
@@ -110,6 +125,7 @@ function App() {
     if (response.room.gameState) {
       dispatch({ type: 'game:update', gameState: response.room.gameState });
     }
+    dispatch({ type: 'info', message: 'Game started' });
     dispatch({ type: 'request:end' });
   }
 
@@ -179,18 +195,42 @@ function App() {
     }
   }
 
+  async function copyRoomId() {
+    if (!currentRoomId) return;
+    try {
+      await navigator.clipboard.writeText(currentRoomId);
+      dispatch({ type: 'info', message: `Copied room id ${currentRoomId}` });
+    } catch {
+      dispatch({ type: 'error', message: 'Clipboard not available in this browser context.' });
+    }
+  }
+
   return (
     <main className="layout">
       <header>
         <h1>LudoX frontend client</h1>
-        <p className="subtitle">
-          Socket.IO room flow, turn controls, and replay viewer for backend event streams.
-        </p>
-        <p>
-          Realtime: <strong>{state.isConnected ? 'connected' : 'disconnected'}</strong>
-        </p>
-        {state.error ? <p className="status error">{state.error}</p> : null}
-        {state.info ? <p className="status info">{state.info}</p> : null}
+        <p className="subtitle">Realtime room play, clear turn flow, and replay exploration.</p>
+        <div className="status-line">
+          <p>
+            Realtime:{' '}
+            <strong className={state.isConnected ? 'connected' : 'disconnected'}>
+              {state.isConnected ? 'connected' : 'disconnected'}
+            </strong>
+          </p>
+          {state.gameState?.winner ? (
+            <p className="winner-banner">Winner: {getPlayerName(state.room, state.gameState.winner)}</p>
+          ) : null}
+        </div>
+        {state.error ? (
+          <p className="status error" role="alert">
+            {state.error}
+          </p>
+        ) : null}
+        {state.info ? (
+          <p className="status info" role="status" aria-live="polite">
+            {state.info}
+          </p>
+        ) : null}
       </header>
 
       <section className="grid">
@@ -206,6 +246,7 @@ function App() {
           onCreateRoom={createOrJoinRoom}
           onJoinRoom={createOrJoinRoom}
           onStartGame={startGame}
+          onCopyRoomId={copyRoomId}
         />
 
         <TurnControls
@@ -214,22 +255,27 @@ function App() {
           movableTokens={movableTokens}
           lastDice={state.gameState?.lastDice ?? null}
           isSubmitting={state.isSubmitting}
+          currentTurnPlayerName={currentTurnPlayerName}
           onRollDice={rollDice}
           onMoveToken={moveToken}
         />
       </section>
 
-      <LudoBoard room={state.room} gameState={state.gameState} />
+      <LudoBoard room={state.room} gameState={state.gameState} myPlayerId={playerId} />
 
-      <ReplayViewer
-        replayRoomId={state.replayRoomId}
-        replayEvents={state.replayEvents}
-        loadingReplay={state.loadingReplay}
-        roomInput={roomInput}
-        currentRoomId={currentRoomId}
-        onRoomInputChange={setRoomInput}
-        onLoadReplay={loadReplay}
-      />
+      <section className="grid">
+        <GameTimeline events={state.events} room={state.room} onClear={() => dispatch({ type: 'events:clear' })} />
+
+        <ReplayViewer
+          replayRoomId={state.replayRoomId}
+          replayEvents={state.replayEvents}
+          loadingReplay={state.loadingReplay}
+          roomInput={roomInput}
+          currentRoomId={currentRoomId}
+          onRoomInputChange={setRoomInput}
+          onLoadReplay={loadReplay}
+        />
+      </section>
     </main>
   );
 }

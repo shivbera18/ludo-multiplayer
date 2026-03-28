@@ -32,9 +32,11 @@ type GameAction =
   | { type: 'request:end' }
   | { type: 'error'; message: string }
   | { type: 'info'; message: string | null }
+  | { type: 'message:clear'; scope?: 'all' | 'error' | 'info' }
   | { type: 'room:update'; room: RoomSnapshot }
   | { type: 'game:update'; gameState: LudoGameState }
   | { type: 'event:add'; event: GameEvent; gameState?: LudoGameState }
+  | { type: 'events:clear' }
   | { type: 'replay:loading'; roomId: string }
   | { type: 'replay:loaded'; roomId: string; events: GameEvent[] };
 
@@ -54,6 +56,12 @@ export function gameReducer(state: FrontendGameState, action: GameAction): Front
       return { ...state, error: action.message, isSubmitting: false };
     case 'info':
       return { ...state, info: action.message };
+    case 'message:clear': {
+      const scope = action.scope ?? 'all';
+      if (scope === 'error') return { ...state, error: null };
+      if (scope === 'info') return { ...state, info: null };
+      return { ...state, error: null, info: null };
+    }
     case 'room:update':
       return {
         ...state,
@@ -76,9 +84,14 @@ export function gameReducer(state: FrontendGameState, action: GameAction): Front
     case 'event:add':
       return {
         ...state,
-        events: [...state.events, action.event],
+        events: [...state.events, action.event].slice(-200),
         gameState: action.gameState ?? state.gameState,
-        info: `${action.event.type} event received`
+        info: describeGameEvent(action.event)
+      };
+    case 'events:clear':
+      return {
+        ...state,
+        events: []
       };
     case 'replay:loading':
       return {
@@ -125,4 +138,15 @@ export function humanTokenPosition(position: number): string {
   if (position < 0) return 'YARD';
   if (position === 57) return 'HOME';
   return position.toString();
+}
+
+export function describeGameEvent(event: GameEvent): string {
+  const actor = event.playerId ? ` by ${event.playerId}` : '';
+  return `${event.type} (#${event.sequence})${actor}`;
+}
+
+export function getPlayerName(room: RoomSnapshot | null, playerId: string | null): string {
+  if (!room || !playerId) return '—';
+  const player = room.players.find((entry) => entry.playerId === playerId);
+  return player?.name ?? playerId;
 }

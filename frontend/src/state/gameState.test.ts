@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
+  describeGameEvent,
   gameReducer,
   getCurrentTurnPlayerId,
   getMovableTokenIndexes,
+  getPlayerName,
   humanTokenPosition,
   initialState
 } from './gameState';
@@ -14,7 +16,10 @@ describe('game state reducer', () => {
       room: {
         roomId: 'r1',
         status: 'active',
-        players: [{ playerId: 'p1', name: 'P1' }, { playerId: 'p2', name: 'P2' }],
+        players: [
+          { playerId: 'p1', name: 'P1' },
+          { playerId: 'p2', name: 'P2' }
+        ],
         gameState: {
           status: 'active',
           playerOrder: ['p1', 'p2'],
@@ -68,5 +73,52 @@ describe('game state reducer', () => {
     expect(turnPlayer).toBe('p1');
     expect(humanTokenPosition(-1)).toBe('YARD');
     expect(humanTokenPosition(57)).toBe('HOME');
+  });
+
+  it('clears scoped notifications and trims event feed', () => {
+    let state = gameReducer(initialState, { type: 'error', message: 'bad' });
+    state = gameReducer(state, { type: 'info', message: 'ok' });
+    state = gameReducer(state, { type: 'message:clear', scope: 'error' });
+    expect(state.error).toBeNull();
+    expect(state.info).toBe('ok');
+
+    for (let index = 0; index < 205; index += 1) {
+      state = gameReducer(state, {
+        type: 'event:add',
+        event: {
+          sequence: index + 1,
+          timestamp: '2024-01-01T00:00:00.000Z',
+          type: 'eventType',
+          playerId: 'p1'
+        }
+      });
+    }
+
+    expect(state.events).toHaveLength(200);
+    expect(state.events[0]?.sequence).toBe(6);
+  });
+
+  it('provides event and player labels for ui surfaces', () => {
+    const message = describeGameEvent({
+      sequence: 9,
+      timestamp: '2024-01-01T00:00:00.000Z',
+      type: 'diceRolled',
+      playerId: 'p1'
+    });
+    expect(message).toContain('diceRolled');
+    expect(message).toContain('#9');
+
+    expect(
+      getPlayerName(
+        {
+          roomId: 'room',
+          status: 'active',
+          gameState: null,
+          players: [{ playerId: 'p1', name: 'Player One' }]
+        },
+        'p1'
+      )
+    ).toBe('Player One');
+    expect(getPlayerName(null, 'p1')).toBe('—');
   });
 });

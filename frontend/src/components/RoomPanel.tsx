@@ -13,6 +13,7 @@ interface RoomPanelProps {
   onCreateRoom: () => Promise<void>;
   onJoinRoom: () => Promise<void>;
   onStartGame: () => Promise<void>;
+  onCopyRoomId: () => Promise<void>;
 }
 
 export function RoomPanel({
@@ -26,13 +27,16 @@ export function RoomPanel({
   onRoomInputChange,
   onCreateRoom,
   onJoinRoom,
-  onStartGame
+  onStartGame,
+  onCopyRoomId
 }: RoomPanelProps) {
-  const canStart = room?.players[0]?.playerId === playerId && room.status === 'waiting' && room.players.length >= 2;
+  const isHost = room?.players[0]?.playerId === playerId;
+  const canStart = Boolean(isHost && room?.status === 'waiting' && room.players.length >= 2);
+  const hasRoomInput = roomInput.trim().length > 0;
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (roomInput.trim()) {
+    if (hasRoomInput) {
       await onJoinRoom();
       return;
     }
@@ -70,17 +74,41 @@ export function RoomPanel({
           />
         </label>
         <div className="row">
-          <button type="submit" disabled={isSubmitting}>Create / Join</button>
+          <button type="submit" disabled={isSubmitting}>
+            {hasRoomInput ? 'Join room' : 'Create room'}
+          </button>
           <button type="button" onClick={() => void onStartGame()} disabled={!canStart || isSubmitting}>
-            Start game
+            {isHost ? 'Start match' : 'Host starts game'}
+          </button>
+          <button
+            type="button"
+            className="secondary-button"
+            onClick={() => void onCopyRoomId()}
+            disabled={!room?.roomId || isSubmitting}
+          >
+            Copy room id
           </button>
         </div>
       </form>
 
       <div className="room-meta">
-        <p><strong>Current room:</strong> {room?.roomId ?? 'none'}</p>
-        <p><strong>Status:</strong> {room?.status ?? 'idle'}</p>
-        <p><strong>Players:</strong> {room?.players.map((player) => player.name).join(', ') || '—'}</p>
+        <p>
+          <strong>Current room:</strong> {room?.roomId ?? 'none'}
+        </p>
+        <p>
+          <strong>Status:</strong> {room?.status ?? 'idle'}
+        </p>
+        <p>
+          <strong>Your role:</strong>{' '}
+          {room ? (isHost ? 'Host' : 'Player') : 'No room joined'}
+        </p>
+        <p>
+          <strong>Players ({room?.players.length ?? 0}):</strong>{' '}
+          {room?.players.map((player) => player.name).join(', ') || '—'}
+        </p>
+        {room?.status === 'waiting' && isHost && room.players.length < 2 ? (
+          <p className="hint">Invite another player, then start the match.</p>
+        ) : null}
       </div>
     </section>
   );
