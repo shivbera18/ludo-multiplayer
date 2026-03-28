@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "bootstrap": "npm install && npm --prefix frontend install",
+    "db:init": "node scripts/initDb.js",
     "start": "node src/index.js",
     "start:backend": "node src/index.js",
     "dev:backend": "node --watch src/index.js",
@@ -20,8 +21,12 @@
     "test": "npm run test:backend && npm run test:frontend"
   },
   "dependencies": {
+    "bcryptjs": "^3.0.2",
+    "cors": "^2.8.5",
     "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.2",
     "kafkajs": "^2.2.4",
+    "pg": "^8.16.3",
     "redis": "^5.11.0",
     "socket.io": "^4.8.1"
   },
