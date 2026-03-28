@@ -4,9 +4,20 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "bootstrap": "npm install && npm --prefix frontend install",
     "start": "node src/index.js",
-    "dev": "node --watch src/index.js",
-    "test": "vitest run"
+    "start:backend": "node src/index.js",
+    "dev:backend": "node --watch src/index.js",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "dev": "npm run dev:backend",
+    "build:backend": "node --check src/index.js && node --check src/server.js && node --check src/engine/ludoEngine.js && node --check src/rooms/roomStore.js && node --check src/events/eventLogStore.js",
+    "build:frontend": "npm --prefix frontend run build",
+    "build": "npm run build:backend && npm run build:frontend",
+    "lint:frontend": "npm --prefix frontend run lint",
+    "lint": "npm run lint:frontend",
+    "test:backend": "vitest run test",
+    "test:frontend": "npm --prefix frontend test",
+    "test": "npm run test:backend && npm run test:frontend"
   },
   "dependencies": {
     "express": "^4.21.2",
