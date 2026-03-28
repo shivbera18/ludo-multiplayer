@@ -44,8 +44,8 @@ export function RoomPanel({
   }
 
   return (
-    <section className="panel">
-      <h2>Room lobby</h2>
+    <section className="panel panel-lobby">
+      <h2 className="panel-title">Room lobby</h2>
       <form onSubmit={handleSubmit} className="stack-sm">
         <label>
           Player id

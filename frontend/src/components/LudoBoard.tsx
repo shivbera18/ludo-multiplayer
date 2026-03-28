@@ -36,7 +36,7 @@ export function LudoBoard({ room, gameState, myPlayerId }: LudoBoardProps) {
   if (!room) {
     return (
       <section className="panel">
-        <h2>Ludo board</h2>
+        <h2 className="panel-title">Ludo board</h2>
         <p>Create or join a room to begin.</p>
       </section>
     );
@@ -45,7 +45,7 @@ export function LudoBoard({ room, gameState, myPlayerId }: LudoBoardProps) {
   if (!gameState) {
     return (
       <section className="panel">
-        <h2>Ludo board</h2>
+        <h2 className="panel-title">Ludo board</h2>
         <p>Waiting for host to start the game.</p>
       </section>
     );
@@ -55,9 +55,9 @@ export function LudoBoard({ room, gameState, myPlayerId }: LudoBoardProps) {
   const currentTurnPlayerId = getCurrentTurnPlayerId(gameState);
 
   return (
-    <section className="panel">
+    <section className="panel panel-board">
       <div className="panel-heading">
-        <h2>Ludo board</h2>
+        <h2 className="panel-title">Ludo board</h2>
         <div className="board-status-row">
           <span className="status-chip">
             Turn: <strong>{getPlayerName(room, currentTurnPlayerId)}</strong>

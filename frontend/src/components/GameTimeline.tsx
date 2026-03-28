@@ -30,9 +30,9 @@ export function GameTimeline({ events, room, onClear }: GameTimelineProps) {
   }, [events, filter, room]);
 
   return (
-    <section className="panel">
+    <section className="panel panel-feed">
       <div className="panel-heading">
-        <h2>Game timeline</h2>
+        <h2 className="panel-title">Game timeline</h2>
         <div className="row">
           <input
             value={filter}

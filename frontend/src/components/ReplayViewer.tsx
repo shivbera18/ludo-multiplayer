@@ -62,8 +62,8 @@ export function ReplayViewer({
   }
 
   return (
-    <section className="panel">
-      <h2>Replay viewer</h2>
+    <section className="panel panel-replay">
+      <h2 className="panel-title">Replay viewer</h2>
       <div className="row">
         <input
           value={roomInput}

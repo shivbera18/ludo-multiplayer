@@ -207,13 +207,14 @@ function App() {
 
   return (
     <main className="layout">
-      <header>
-        <h1>LudoX frontend client</h1>
+      <header className="hero">
+        <p className="hero-kicker">Realtime Multiplayer Arena</p>
+        <h1>LudoX Control Center</h1>
         <p className="subtitle">Realtime room play, clear turn flow, and replay exploration.</p>
         <div className="status-line">
-          <p>
+          <p className="status-pill">
             Realtime:{' '}
-            <strong className={state.isConnected ? 'connected' : 'disconnected'}>
+            <strong className={`signal ${state.isConnected ? 'connected' : 'disconnected'}`}>
               {state.isConnected ? 'connected' : 'disconnected'}
             </strong>
           </p>
@@ -233,7 +234,7 @@ function App() {
         ) : null}
       </header>
 
-      <section className="grid">
+      <section className="grid stagger-in">
         <RoomPanel
           room={state.room}
           playerId={playerId}
@@ -263,7 +264,7 @@ function App() {
 
       <LudoBoard room={state.room} gameState={state.gameState} myPlayerId={playerId} />
 
-      <section className="grid">
+      <section className="grid stagger-in">
         <GameTimeline events={state.events} room={state.room} onClear={() => dispatch({ type: 'events:clear' })} />
 
         <ReplayViewer

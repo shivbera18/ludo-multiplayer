@@ -20,8 +20,8 @@ export function TurnControls({
   onMoveToken
 }: TurnControlsProps) {
   return (
-    <section className="panel">
-      <h2>Turn controls</h2>
+    <section className="panel panel-controls">
+      <h2 className="panel-title">Turn controls</h2>
       <div className="turn-summary">
         <p>
           Active turn: <strong>{currentTurnPlayerName}</strong>

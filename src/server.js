@@ -4,6 +4,7 @@ import { Server } from 'socket.io';
 import { RoomStore } from './rooms/roomStore.js';
 import { EventLogStore } from './events/eventLogStore.js';
 import { TurnTimerManager, TurnTimerConstants } from './realtime/turnTimerManager.js';
+import { createMessagingBus } from './realtime/messagingBus.js';
 
 export function createApp({ roomStore = new RoomStore(), eventLogStore = new EventLogStore() } = {}) {
   const app = express();
@@ -36,6 +37,11 @@ export function createRealtimeServer(options = {}) {
   const server = http.createServer(app);
   const io = new Server(server, {
     cors: { origin: '*' }
+  });
+  const messagingBus = createMessagingBus({
+    onBroadcast: ({ roomId, eventName, payload }) => {
+      io.to(roomId).emit(eventName, payload);
+    }
   });
   const turnTimerManager = new TurnTimerManager({ roomStore, eventLogStore, io, turnDurationMs });
   const sessionBySocketId = new Map();
@@ -72,54 +78,76 @@ export function createRealtimeServer(options = {}) {
     sessionBySocketId.delete(socketId);
   }
 
+  function appendEvent(roomId, eventPayload, eventType = eventPayload.type) {
+    const event = eventLogStore.append(roomId, eventPayload);
+    messagingBus.publishDomainEvent(eventType, {
+      roomId,
+      event
+    });
+    return event;
+  }
+
+  function emitRoomEvent(roomId, eventName, payload) {
+    io.to(roomId).emit(eventName, payload);
+    messagingBus.publishBroadcast(roomId, eventName, payload);
+  }
+
   function emitTurnChanged(roomId, reason, actorPlayerId) {
     const room = roomStore.getRoom(roomId);
     if (!room?.engine) return;
     const state = room.engine.getState();
     const currentPlayerId = state.playerOrder[state.currentTurn];
 
-    const event = eventLogStore.append(roomId, {
+    const event = appendEvent(
+      roomId,
+      {
       type: 'turnChanged',
       payload: {
         currentPlayerId,
         reason,
         actorPlayerId
       }
-    });
+      },
+      'game.turnChanged'
+    );
 
-    io.to(roomId).emit('game:turnChanged', {
+    emitRoomEvent(roomId, 'game:turnChanged', {
       roomId,
       currentPlayerId,
       reason,
       actorPlayerId
     });
 
-    io.to(roomId).emit('game:event', { event, gameState: room.engine.getState() });
+    emitRoomEvent(roomId, 'game:event', { event, gameState: room.engine.getState() });
   }
 
   function emitWinnerAndFinish(roomId, winnerPlayerId) {
     const room = roomStore.finishGame(roomId);
     turnTimerManager.clearTimer(roomId);
-    const event = eventLogStore.append(roomId, {
+    const event = appendEvent(
+      roomId,
+      {
       type: 'gameFinished',
       playerId: winnerPlayerId,
       payload: {
         winnerPlayerId
       }
-    });
+      },
+      'game.finished'
+    );
 
-    io.to(roomId).emit('game:winner', {
+    emitRoomEvent(roomId, 'game:winner', {
       roomId,
       winnerPlayerId,
       gameState: room.engine?.getState() ?? null
     });
-    io.to(roomId).emit('game:finished', {
+    emitRoomEvent(roomId, 'game:finished', {
       roomId,
       winnerPlayerId,
       room: roomStore.serialize(room)
     });
-    io.to(roomId).emit('room:update', roomStore.serialize(room));
-    io.to(roomId).emit('game:event', { event, gameState: room.engine?.getState() ?? null });
+    emitRoomEvent(roomId, 'room:update', roomStore.serialize(room));
+    emitRoomEvent(roomId, 'game:event', { event, gameState: room.engine?.getState() ?? null });
   }
 
   io.on('connection', (socket) => {
@@ -133,10 +161,14 @@ export function createRealtimeServer(options = {}) {
         const room = roomStore.createRoom({ playerId, name: name ?? playerId });
         registerSession(socket, room.roomId, playerId);
 
-        const event = eventLogStore.append(room.roomId, {
+        const event = appendEvent(
+          room.roomId,
+          {
           type: 'roomCreated',
           playerId
-        });
+          },
+          'room.created'
+        );
 
         ack({ ok: true, room: roomStore.serialize(room), event });
       } catch (error) {
@@ -149,13 +181,17 @@ export function createRealtimeServer(options = {}) {
         if (!playerId || !roomId) throw new Error('roomId and playerId required');
         const room = roomStore.joinRoom(roomId, { playerId, name: name ?? playerId });
         registerSession(socket, roomId, playerId);
-        const event = eventLogStore.append(roomId, {
+        const event = appendEvent(
+          roomId,
+          {
           type: 'roomJoined',
           playerId
-        });
+          },
+          'room.joined'
+        );
         const remainingTurnMs = turnTimerManager.getRemainingMs(roomId);
         const currentState = room.engine?.getState() ?? null;
-        io.to(roomId).emit('room:update', roomStore.serialize(room));
+        emitRoomEvent(roomId, 'room:update', roomStore.serialize(room));
         if (currentState) {
           socket.emit('game:state', roomStore.serialize(room));
           socket.emit('game:timerUpdate', {
@@ -175,11 +211,15 @@ export function createRealtimeServer(options = {}) {
     socket.on('game:start', ({ roomId, playerId }, ack = () => {}) => {
       try {
         const room = roomStore.startGame(roomId, playerId);
-        const event = eventLogStore.append(roomId, {
+        const event = appendEvent(
+          roomId,
+          {
           type: 'gameStarted',
           playerId
-        });
-        io.to(roomId).emit('game:state', roomStore.serialize(room));
+          },
+          'game.started'
+        );
+        emitRoomEvent(roomId, 'game:state', roomStore.serialize(room));
         emitTurnChanged(roomId, 'gameStart', playerId);
         turnTimerManager.scheduleForRoom(roomId, { reason: 'gameStart', actorPlayerId: playerId });
         ack({ ok: true, room: roomStore.serialize(room), event });
@@ -201,12 +241,16 @@ export function createRealtimeServer(options = {}) {
 
         const beforeTurn = room.engine.getState().currentTurn;
         const rollResult = room.engine.rollDice(playerId);
-        const event = eventLogStore.append(roomId, {
+        const event = appendEvent(
+          roomId,
+          {
           type: 'diceRolled',
           playerId,
           actionId,
           payload: rollResult
-        });
+          },
+          'game.diceRolled'
+        );
 
         const afterState = room.engine.getState();
         const afterTurn = afterState.currentTurn;
@@ -215,7 +259,7 @@ export function createRealtimeServer(options = {}) {
           emitTurnChanged(roomId, 'rollAutoSkip', playerId);
         }
         turnTimerManager.scheduleForRoom(roomId, { reason: 'rollProcessed', actorPlayerId: playerId });
-        io.to(roomId).emit('game:event', { event, gameState: room.engine.getState() });
+        emitRoomEvent(roomId, 'game:event', { event, gameState: room.engine.getState() });
         return ack({ ok: true, event, gameState: room.engine.getState() });
       } catch (error) {
         return ack({ ok: false, error: error.message });
@@ -235,12 +279,16 @@ export function createRealtimeServer(options = {}) {
 
         const beforeTurn = room.engine.getState().currentTurn;
         const moveResult = room.engine.moveToken(playerId, tokenIndex);
-        const event = eventLogStore.append(roomId, {
+        const event = appendEvent(
+          roomId,
+          {
           type: 'tokenMoved',
           playerId,
           actionId,
           payload: moveResult
-        });
+          },
+          'game.tokenMoved'
+        );
 
         const state = room.engine.getState();
         if (state.status === 'finished' && state.winner) {
@@ -253,12 +301,16 @@ export function createRealtimeServer(options = {}) {
           turnTimerManager.scheduleForRoom(roomId, { reason: 'moveCompleted', actorPlayerId: playerId });
         }
 
-        io.to(roomId).emit('game:event', { event, gameState: room.engine.getState() });
+        emitRoomEvent(roomId, 'game:event', { event, gameState: room.engine.getState() });
         return ack({ ok: true, event, gameState: room.engine.getState() });
       } catch (error) {
         return ack({ ok: false, error: error.message });
       }
     });
+  });
+
+  server.on('close', () => {
+    void messagingBus.close();
   });
 
   return {
@@ -267,6 +319,7 @@ export function createRealtimeServer(options = {}) {
     io,
     roomStore,
     eventLogStore,
-    turnTimerManager
+    turnTimerManager,
+    messagingBus
   };
 }
