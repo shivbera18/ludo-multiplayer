@@ -1,0 +1,93 @@
+import { useMemo, useState } from 'react';
+import type { ChatMessage } from '../types';
+
+interface ChatPanelProps {
+  roomId: string | null;
+  playerId: string;
+  messages: ChatMessage[];
+  onSendMessage: (message: string) => Promise<void>;
+  isSubmitting: boolean;
+}
+
+function formatTime(timestamp: string): string {
+  const date = new Date(timestamp);
+  if (Number.isNaN(date.getTime())) return '--:--';
+  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+export function ChatPanel({ roomId, playerId, messages, onSendMessage, isSubmitting }: ChatPanelProps) {
+  const [draft, setDraft] = useState('');
+
+  const sortedMessages = useMemo(
+    () => [...messages].sort((a, b) => a.sequence - b.sequence),
+    [messages]
+  );
+
+  async function handleSend() {
+    const content = draft.trim();
+    if (!content) return;
+    await onSendMessage(content);
+    setDraft('');
+  }
+
+  return (
+    <section className="panel animate-floatIn min-h-[320px]">
+      <div className="flex items-center justify-between gap-2 border-b border-amber-200 pb-2">
+        <h2 className="font-display text-lg font-bold text-slate-900">Room chat</h2>
+        <span className="rounded-full border border-sky-200 bg-sky-50 px-2 py-0.5 text-[11px] font-semibold text-sky-800">
+          {roomId ? 'Live' : 'No room'}
+        </span>
+      </div>
+
+      <div className="mt-3 grid max-h-64 gap-2 overflow-auto pr-1">
+        {sortedMessages.length === 0 ? (
+          <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-slate-600">
+            No messages yet. Say hi to start the table chat.
+          </p>
+        ) : (
+          sortedMessages.map((entry) => {
+            const isMine = entry.playerId === playerId;
+            return (
+              <article
+                key={`${entry.sequence}-${entry.timestamp}-${entry.playerId}`}
+                className={`max-w-[92%] rounded-2xl px-3 py-2 text-sm shadow ${
+                  isMine
+                    ? 'ml-auto border border-sky-300 bg-sky-100 text-sky-900'
+                    : 'mr-auto border border-amber-200 bg-white text-slate-800'
+                }`}
+              >
+                <div className="mb-1 flex items-center justify-between gap-2 text-[11px] font-semibold opacity-80">
+                  <span>{entry.playerName}</span>
+                  <span>{formatTime(entry.timestamp)}</span>
+                </div>
+                <p className="whitespace-pre-wrap break-words">{entry.message}</p>
+              </article>
+            );
+          })
+        )}
+      </div>
+
+      <div className="mt-3 grid gap-2 border-t border-amber-200 pt-3">
+        <textarea
+          className="input min-h-20 resize-none"
+          value={draft}
+          onChange={(event) => setDraft(event.target.value)}
+          maxLength={320}
+          placeholder={roomId ? 'Type your message...' : 'Join a room to chat'}
+          disabled={!roomId || isSubmitting}
+        />
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-xs text-slate-500">{draft.length}/320</span>
+          <button
+            className="btn-primary"
+            type="button"
+            onClick={() => void handleSend()}
+            disabled={!roomId || !draft.trim() || isSubmitting}
+          >
+            Send
+          </button>
+        </div>
+      </div>
+    </section>
+  );
+}

@@ -1,5 +1,5 @@
 import { io, type Socket } from 'socket.io-client';
-import type { AckResponse, GameEvent, LudoGameState, RoomSnapshot } from '../types';
+import type { AckResponse, ChatMessage, GameEvent, LudoGameState, RoomSnapshot } from '../types';
 
 export class SocketClient {
   private readonly socket: Socket;
@@ -51,6 +51,11 @@ export class SocketClient {
     return () => this.socket.off('game:event', handler);
   }
 
+  onChatMessage(handler: (payload: ChatMessage) => void) {
+    this.socket.on('chat:message', handler);
+    return () => this.socket.off('chat:message', handler);
+  }
+
   private emitWithAck(event: string, payload: Record<string, unknown>): Promise<AckResponse<unknown>> {
     return new Promise((resolve) => {
       this.socket.timeout(5000).emit(event, payload, (error: Error | null, response?: AckResponse<unknown>) => {
@@ -81,6 +86,10 @@ export class SocketClient {
 
   moveToken(payload: { roomId: string; playerId: string; tokenIndex: number; actionId: string }) {
     return this.emitWithAck('game:move', payload);
+  }
+
+  sendChatMessage(payload: { roomId: string; message: string; playerId?: string; name?: string }) {
+    return this.emitWithAck('chat:send', payload);
   }
 }
 

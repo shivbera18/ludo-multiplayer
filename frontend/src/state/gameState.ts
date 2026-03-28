@@ -1,10 +1,11 @@
-import type { GameEvent, LudoGameState, RoomSnapshot } from '../types';
+import type { ChatMessage, GameEvent, LudoGameState, RoomSnapshot } from '../types';
 
 export interface FrontendGameState {
   isConnected: boolean;
   room: RoomSnapshot | null;
   gameState: LudoGameState | null;
   events: GameEvent[];
+  chatMessages: ChatMessage[];
   replayEvents: GameEvent[];
   replayRoomId: string;
   loadingReplay: boolean;
@@ -18,6 +19,7 @@ export const initialState: FrontendGameState = {
   room: null,
   gameState: null,
   events: [],
+  chatMessages: [],
   replayEvents: [],
   replayRoomId: '',
   loadingReplay: false,
@@ -36,6 +38,8 @@ type GameAction =
   | { type: 'room:update'; room: RoomSnapshot }
   | { type: 'game:update'; gameState: LudoGameState }
   | { type: 'event:add'; event: GameEvent; gameState?: LudoGameState }
+  | { type: 'chat:add'; message: ChatMessage }
+  | { type: 'chat:clear' }
   | { type: 'events:clear' }
   | { type: 'replay:loading'; roomId: string }
   | { type: 'replay:loaded'; roomId: string; events: GameEvent[] };
@@ -67,6 +71,7 @@ export function gameReducer(state: FrontendGameState, action: GameAction): Front
         ...state,
         room: action.room,
         gameState: action.room.gameState,
+        chatMessages: state.room?.roomId === action.room.roomId ? state.chatMessages : [],
         error: null
       };
     case 'game:update':
@@ -87,6 +92,16 @@ export function gameReducer(state: FrontendGameState, action: GameAction): Front
         events: [...state.events, action.event].slice(-200),
         gameState: action.gameState ?? state.gameState,
         info: describeGameEvent(action.event)
+      };
+    case 'chat:add':
+      return {
+        ...state,
+        chatMessages: [...state.chatMessages, action.message].slice(-120)
+      };
+    case 'chat:clear':
+      return {
+        ...state,
+        chatMessages: []
       };
     case 'events:clear':
       return {

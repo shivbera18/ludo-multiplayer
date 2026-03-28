@@ -51,6 +51,15 @@ export interface AuthResponse {
   user: AuthUser;
 }
 
+export interface ChatMessage {
+  roomId: string;
+  playerId: string;
+  playerName: string;
+  message: string;
+  timestamp: string;
+  sequence: number;
+}
+
 export interface AckResponse<T> {
   ok: boolean;
   error?: string;

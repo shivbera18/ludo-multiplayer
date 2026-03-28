@@ -50,17 +50,23 @@ export function TurnControls({
             {isMyTurn ? 'No valid token move for this dice.' : 'Wait for your turn to move tokens.'}
           </small>
         ) : (
-          movableTokens.map((tokenIndex) => (
-            <button
-              key={tokenIndex}
-              className="btn-secondary"
-              onClick={() => void onMoveToken(tokenIndex)}
-              disabled={!isMyTurn || isSubmitting}
-            >
-              Move token #{tokenIndex + 1}
-            </button>
-          ))
+          <small className="text-sm text-slate-700">
+            Movable chips are highlighted on the board. Click a highlighted chip to move.
+          </small>
         )}
+      </div>
+
+      <div className="mt-2 flex flex-wrap gap-2">
+        {movableTokens.map((tokenIndex) => (
+          <button
+            key={tokenIndex}
+            className="btn-secondary"
+            onClick={() => void onMoveToken(tokenIndex)}
+            disabled={!isMyTurn || isSubmitting}
+          >
+            Move token #{tokenIndex + 1}
+          </button>
+        ))}
       </div>
     </section>
   );

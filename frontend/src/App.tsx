@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useReducer, useState } from 'react';
 import { GameTimeline } from './components/GameTimeline';
+import { ChatPanel } from './components/ChatPanel';
 import { LudoBoard } from './components/LudoBoard';
 import { ReplayViewer } from './components/ReplayViewer';
 import { RoomPanel } from './components/RoomPanel';
@@ -84,10 +85,15 @@ function App() {
       dispatch({ type: 'event:add', event, gameState });
     });
 
+    const removeChatMessage = socketClient.onChatMessage((message) => {
+      dispatch({ type: 'chat:add', message });
+    });
+
     return () => {
       removeRoomUpdate();
       removeGameState();
       removeGameEvent();
+      removeChatMessage();
       socketClient.disconnect();
     };
   }, [socketClient]);
@@ -153,7 +159,7 @@ function App() {
     dispatch({ type: 'message:clear' });
   }
 
-  async function createOrJoinRoom() {
+  async function createOrJoinRoom(modeOverride?: 'create' | 'join') {
     if (!auth) {
       setAuthError('Login required');
       return;
@@ -161,7 +167,9 @@ function App() {
 
     dispatch({ type: 'request:start' });
 
-    if (roomChoice === 'join') {
+    const mode = modeOverride ?? roomChoice;
+
+    if (mode === 'join') {
       if (!roomInput.trim()) {
         dispatch({ type: 'error', message: 'Enter a room id to join' });
         return;
@@ -264,6 +272,21 @@ function App() {
       dispatch({ type: 'event:add', event: response.event, gameState: response.gameState });
     }
     dispatch({ type: 'request:end' });
+  }
+
+  async function sendChatMessage(message: string) {
+    if (!currentRoomId) return;
+
+    const response = await socketClient.sendChatMessage({
+      roomId: currentRoomId,
+      message,
+      playerId,
+      name: playerName
+    });
+
+    if (!response.ok) {
+      dispatch({ type: 'error', message: response.error ?? 'Unable to send message' });
+    }
   }
 
   async function loadReplay(roomId: string) {
@@ -459,58 +482,67 @@ function App() {
 
       {state.room ? (
         <>
-          <section className="mt-4 grid gap-4 lg:grid-cols-2">
-            <RoomPanel
-              room={state.room}
-              playerId={playerId}
-              playerName={playerName}
-              roomInput={roomInput}
-              isSubmitting={state.isSubmitting}
-              onPlayerIdChange={() => undefined}
-              onPlayerNameChange={() => undefined}
-              onRoomInputChange={setRoomInput}
-              onCreateRoom={createOrJoinRoom}
-              onJoinRoom={createOrJoinRoom}
-              onStartGame={startGame}
-              onCopyRoomId={copyRoomId}
-            />
+          <section className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1.65fr)_minmax(320px,1fr)]">
+            <div className="grid gap-4">
+              <LudoBoard
+                room={state.room}
+                gameState={state.gameState}
+                myPlayerId={playerId}
+                movableTokens={movableTokens}
+                isMyTurn={isMyTurn}
+                isSubmitting={state.isSubmitting}
+                onMoveToken={moveToken}
+              />
 
-            <TurnControls
-              isMyTurn={isMyTurn}
-              canRoll={canRoll}
-              movableTokens={movableTokens}
-              lastDice={state.gameState?.lastDice ?? null}
-              isSubmitting={state.isSubmitting}
-              currentTurnPlayerName={currentTurnPlayerName}
-              onRollDice={rollDice}
-              onMoveToken={moveToken}
-            />
-          </section>
+              <div className="grid gap-4 lg:grid-cols-2">
+                <GameTimeline events={state.events} room={state.room} onClear={() => dispatch({ type: 'events:clear' })} />
+                <ReplayViewer
+                  replayRoomId={state.replayRoomId}
+                  replayEvents={state.replayEvents}
+                  loadingReplay={state.loadingReplay}
+                  roomInput={roomInput}
+                  currentRoomId={currentRoomId}
+                  onRoomInputChange={setRoomInput}
+                  onLoadReplay={loadReplay}
+                />
+              </div>
+            </div>
 
-          <section className="mt-4">
-            <LudoBoard
-              room={state.room}
-              gameState={state.gameState}
-              myPlayerId={playerId}
-              movableTokens={movableTokens}
-              isMyTurn={isMyTurn}
-              isSubmitting={state.isSubmitting}
-              onMoveToken={moveToken}
-            />
-          </section>
+            <aside className="grid content-start gap-4">
+              <TurnControls
+                isMyTurn={isMyTurn}
+                canRoll={canRoll}
+                movableTokens={movableTokens}
+                lastDice={state.gameState?.lastDice ?? null}
+                isSubmitting={state.isSubmitting}
+                currentTurnPlayerName={currentTurnPlayerName}
+                onRollDice={rollDice}
+                onMoveToken={moveToken}
+              />
 
-          <section className="mt-4 grid gap-4 lg:grid-cols-2">
-            <GameTimeline events={state.events} room={state.room} onClear={() => dispatch({ type: 'events:clear' })} />
+              <ChatPanel
+                roomId={currentRoomId}
+                playerId={playerId}
+                messages={state.chatMessages}
+                onSendMessage={sendChatMessage}
+                isSubmitting={state.isSubmitting}
+              />
 
-            <ReplayViewer
-              replayRoomId={state.replayRoomId}
-              replayEvents={state.replayEvents}
-              loadingReplay={state.loadingReplay}
-              roomInput={roomInput}
-              currentRoomId={currentRoomId}
-              onRoomInputChange={setRoomInput}
-              onLoadReplay={loadReplay}
-            />
+              <RoomPanel
+                room={state.room}
+                playerId={playerId}
+                playerName={playerName}
+                roomInput={roomInput}
+                isSubmitting={state.isSubmitting}
+                onPlayerIdChange={() => undefined}
+                onPlayerNameChange={() => undefined}
+                onRoomInputChange={setRoomInput}
+                onCreateRoom={() => createOrJoinRoom('create')}
+                onJoinRoom={() => createOrJoinRoom('join')}
+                onStartGame={startGame}
+                onCopyRoomId={copyRoomId}
+              />
+            </aside>
           </section>
         </>
       ) : null}

@@ -467,6 +467,56 @@ export function createRealtimeServer(options = {}) {
         return ack({ ok: false, error: error.message });
       }
     });
+
+    socket.on('chat:send', async (payload = {}, ack = () => {}) => {
+      try {
+        const roomId = payload.roomId;
+        const actor = resolveActor(socket, payload);
+        const message = typeof payload.message === 'string' ? payload.message.trim() : '';
+
+        if (!roomId) {
+          throw new Error('roomId required');
+        }
+        if (!message) {
+          throw new Error('message required');
+        }
+        if (message.length > 320) {
+          throw new Error('message too long');
+        }
+
+        const room = roomStore.getRoom(roomId);
+        if (!room) {
+          throw new Error('Room not found');
+        }
+
+        const event = await appendEvent(
+          roomId,
+          {
+            type: 'chatMessage',
+            playerId: actor.playerId,
+            payload: {
+              roomId,
+              message,
+              playerName: actor.name
+            }
+          },
+          'chat.message'
+        );
+
+        emitRoomEvent(roomId, 'chat:message', {
+          roomId,
+          playerId: actor.playerId,
+          playerName: actor.name,
+          message,
+          timestamp: event.timestamp,
+          sequence: event.sequence
+        });
+
+        ack({ ok: true, event });
+      } catch (error) {
+        ack({ ok: false, error: error.message });
+      }
+    });
   });
 
   server.on('close', () => {
