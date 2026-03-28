@@ -1,0 +1,128 @@
+import type { GameEvent, LudoGameState, RoomSnapshot } from '../types';
+
+export interface FrontendGameState {
+  isConnected: boolean;
+  room: RoomSnapshot | null;
+  gameState: LudoGameState | null;
+  events: GameEvent[];
+  replayEvents: GameEvent[];
+  replayRoomId: string;
+  loadingReplay: boolean;
+  error: string | null;
+  info: string | null;
+  isSubmitting: boolean;
+}
+
+export const initialState: FrontendGameState = {
+  isConnected: false,
+  room: null,
+  gameState: null,
+  events: [],
+  replayEvents: [],
+  replayRoomId: '',
+  loadingReplay: false,
+  error: null,
+  info: null,
+  isSubmitting: false
+};
+
+type GameAction =
+  | { type: 'connection'; connected: boolean }
+  | { type: 'request:start' }
+  | { type: 'request:end' }
+  | { type: 'error'; message: string }
+  | { type: 'info'; message: string | null }
+  | { type: 'room:update'; room: RoomSnapshot }
+  | { type: 'game:update'; gameState: LudoGameState }
+  | { type: 'event:add'; event: GameEvent; gameState?: LudoGameState }
+  | { type: 'replay:loading'; roomId: string }
+  | { type: 'replay:loaded'; roomId: string; events: GameEvent[] };
+
+export function gameReducer(state: FrontendGameState, action: GameAction): FrontendGameState {
+  switch (action.type) {
+    case 'connection':
+      return {
+        ...state,
+        isConnected: action.connected,
+        error: action.connected ? state.error : 'Disconnected from realtime server.'
+      };
+    case 'request:start':
+      return { ...state, isSubmitting: true, error: null, info: null };
+    case 'request:end':
+      return { ...state, isSubmitting: false };
+    case 'error':
+      return { ...state, error: action.message, isSubmitting: false };
+    case 'info':
+      return { ...state, info: action.message };
+    case 'room:update':
+      return {
+        ...state,
+        room: action.room,
+        gameState: action.room.gameState,
+        error: null
+      };
+    case 'game:update':
+      return {
+        ...state,
+        gameState: action.gameState,
+        room: state.room
+          ? {
+              ...state.room,
+              status: action.gameState.status === 'finished' ? 'finished' : 'active',
+              gameState: action.gameState
+            }
+          : state.room
+      };
+    case 'event:add':
+      return {
+        ...state,
+        events: [...state.events, action.event],
+        gameState: action.gameState ?? state.gameState,
+        info: `${action.event.type} event received`
+      };
+    case 'replay:loading':
+      return {
+        ...state,
+        loadingReplay: true,
+        replayRoomId: action.roomId,
+        error: null
+      };
+    case 'replay:loaded':
+      return {
+        ...state,
+        loadingReplay: false,
+        replayRoomId: action.roomId,
+        replayEvents: action.events,
+        info: `Loaded ${action.events.length} replay events`
+      };
+    default:
+      return state;
+  }
+}
+
+export function getCurrentTurnPlayerId(gameState: LudoGameState | null): string | null {
+  if (!gameState) return null;
+  return gameState.playerOrder[gameState.currentTurn] ?? null;
+}
+
+export function getMovableTokenIndexes(gameState: LudoGameState | null, playerId: string): number[] {
+  if (!gameState || !Number.isInteger(gameState.lastDice)) return [];
+  const dice = gameState.lastDice as number;
+  const positions = gameState.players[playerId]?.tokens;
+  if (!positions) return [];
+
+  return positions
+    .map((position, tokenIndex) => ({ position, tokenIndex }))
+    .filter(({ position }) => {
+      if (position === 57) return false;
+      if (position === -1) return dice === 6;
+      return position + dice <= 57;
+    })
+    .map(({ tokenIndex }) => tokenIndex);
+}
+
+export function humanTokenPosition(position: number): string {
+  if (position < 0) return 'YARD';
+  if (position === 57) return 'HOME';
+  return position.toString();
+}
