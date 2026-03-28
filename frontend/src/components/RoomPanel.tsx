@@ -44,45 +44,50 @@ export function RoomPanel({
   }
 
   return (
-    <section className="panel panel-lobby">
-      <h2 className="panel-title">Room lobby</h2>
-      <form onSubmit={handleSubmit} className="stack-sm">
-        <label>
+    <section className="panel animate-floatIn">
+      <h2 className="font-display text-lg font-bold text-slate-900">Room lobby</h2>
+      <form onSubmit={handleSubmit} className="mt-3 grid gap-3">
+        <label className="grid gap-1 text-sm font-medium text-slate-700">
           Player id
           <input
+            className="input"
             value={playerId}
             onChange={(event) => onPlayerIdChange(event.target.value)}
             placeholder="player-1"
+            readOnly
             required
           />
         </label>
-        <label>
+        <label className="grid gap-1 text-sm font-medium text-slate-700">
           Display name
           <input
+            className="input"
             value={playerName}
             onChange={(event) => onPlayerNameChange(event.target.value)}
             placeholder="Player One"
+            readOnly
             required
           />
         </label>
-        <label>
+        <label className="grid gap-1 text-sm font-medium text-slate-700">
           Room id (optional to join)
           <input
+            className="input"
             value={roomInput}
             onChange={(event) => onRoomInputChange(event.target.value)}
             placeholder="Paste room id to join"
           />
         </label>
-        <div className="row">
-          <button type="submit" disabled={isSubmitting}>
+        <div className="flex flex-wrap gap-2">
+          <button className="btn-primary" type="submit" disabled={isSubmitting}>
             {hasRoomInput ? 'Join room' : 'Create room'}
           </button>
-          <button type="button" onClick={() => void onStartGame()} disabled={!canStart || isSubmitting}>
+          <button className="btn-primary" type="button" onClick={() => void onStartGame()} disabled={!canStart || isSubmitting}>
             {isHost ? 'Start match' : 'Host starts game'}
           </button>
           <button
             type="button"
-            className="secondary-button"
+            className="btn-secondary"
             onClick={() => void onCopyRoomId()}
             disabled={!room?.roomId || isSubmitting}
           >
@@ -91,7 +96,7 @@ export function RoomPanel({
         </div>
       </form>
 
-      <div className="room-meta">
+      <div className="mt-4 grid gap-1 text-sm text-slate-700">
         <p>
           <strong>Current room:</strong> {room?.roomId ?? 'none'}
         </p>
@@ -107,7 +112,9 @@ export function RoomPanel({
           {room?.players.map((player) => player.name).join(', ') || '—'}
         </p>
         {room?.status === 'waiting' && isHost && room.players.length < 2 ? (
-          <p className="hint">Invite another player, then start the match.</p>
+          <p className="rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-sm font-medium text-sky-800">
+            Invite another player, then start the match.
+          </p>
         ) : null}
       </div>
     </section>

@@ -62,22 +62,24 @@ export function ReplayViewer({
   }
 
   return (
-    <section className="panel panel-replay">
-      <h2 className="panel-title">Replay viewer</h2>
-      <div className="row">
+    <section className="panel animate-floatIn">
+      <h2 className="font-display text-lg font-bold text-slate-900">Replay viewer</h2>
+      <div className="mt-3 flex flex-wrap gap-2">
         <input
+          className="input"
           value={roomInput}
           onChange={(event) => onRoomInputChange(event.target.value)}
           placeholder="Room id for replay"
         />
-        <button onClick={() => void onLoadReplay(roomTarget)} disabled={!roomTarget || loadingReplay}>
+        <button className="btn-primary" onClick={() => void onLoadReplay(roomTarget)} disabled={!roomTarget || loadingReplay}>
           {loadingReplay ? 'Loading…' : 'Load replay'}
         </button>
       </div>
-      <p>Replay room: {replayRoomId || 'none loaded'}</p>
+      <p className="mt-2 text-sm text-slate-700">Replay room: {replayRoomId || 'none loaded'}</p>
 
-      <div className="row replay-toolbar">
+      <div className="mt-3 flex flex-wrap gap-2">
         <input
+          className="input"
           value={search}
           onChange={(event) => {
             setSearch(event.target.value);
@@ -86,11 +88,11 @@ export function ReplayViewer({
           placeholder="Search events by type / player / payload"
           aria-label="Search replay events"
         />
-        <button className="secondary-button" onClick={onPrevStep} disabled={clampedStepIndex <= 0}>
+        <button className="btn-secondary" onClick={onPrevStep} disabled={clampedStepIndex <= 0}>
           Previous
         </button>
         <button
-          className="secondary-button"
+          className="btn-secondary"
           onClick={onNextStep}
           disabled={filteredEvents.length === 0 || clampedStepIndex >= filteredEvents.length - 1}
         >
@@ -98,22 +100,26 @@ export function ReplayViewer({
         </button>
       </div>
 
-      <p>
+      <p className="mt-3 text-sm text-slate-700">
         Showing <strong>{filteredEvents.length}</strong> / {replayEvents.length} events
       </p>
 
       {activeEvent ? (
-        <div className="active-replay-event" role="status" aria-live="polite">
+        <div className="mt-2 rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-sm text-sky-900" role="status" aria-live="polite">
           Step {clampedStepIndex + 1}: #{activeEvent.sequence} {activeEvent.type} ·{' '}
           {activeEvent.playerId ?? 'system'} · {formatEventTime(activeEvent.timestamp)}
         </div>
       ) : null}
 
-      <ol className="timeline">
+      <ol className="mt-3 grid max-h-72 gap-2 overflow-auto">
         {filteredEvents.map((event, index) => (
           <li
             key={`${event.sequence}-${event.type}-${event.timestamp}`}
-            className={index === clampedStepIndex ? 'timeline-item active' : 'timeline-item'}
+            className={`rounded-lg border px-3 py-2 text-sm ${
+              index === clampedStepIndex
+                ? 'border-sky-300 bg-sky-50 text-sky-900'
+                : 'border-amber-200 bg-white text-slate-700'
+            }`}
           >
             <strong>#{event.sequence}</strong> {event.type} · {event.playerId ?? 'system'} ·{' '}
             {formatEventTime(event.timestamp)}

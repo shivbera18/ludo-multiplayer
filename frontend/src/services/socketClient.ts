@@ -3,15 +3,24 @@ import type { AckResponse, GameEvent, LudoGameState, RoomSnapshot } from '../typ
 
 export class SocketClient {
   private readonly socket: Socket;
+  private authToken: string | null;
 
   constructor(url: string) {
+    this.authToken = null;
     this.socket = io(url, {
       autoConnect: false,
-      transports: ['websocket']
+      transports: ['websocket'],
+      auth: {}
     });
   }
 
+  setAuthToken(token: string | null) {
+    this.authToken = token;
+    this.socket.auth = token ? { token } : {};
+  }
+
   connect() {
+    this.socket.auth = this.authToken ? { token: this.authToken } : {};
     this.socket.connect();
   }
 

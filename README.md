@@ -1,15 +1,21 @@
 # LudoX Monorepo
 
-Realtime multiplayer Ludo implementation with a Node.js backend and React + Vite frontend.
+Realtime multiplayer Ludo implementation with a Node.js backend, PostgreSQL persistence, JWT account auth, and a React + Vite + Tailwind frontend.
 
 ## What is implemented
 
-This repository currently delivers the PRD MVP foundation:
+This repository now delivers an end-to-end playable stack:
+
+- **User accounts** (register/login/profile) with JWT auth.
+- **Local PostgreSQL persistence** for users and replay events.
+- **Server-authoritative multiplayer gameplay** over Socket.IO.
+- **Replay API** that can read from DB-backed event history.
+- **Tailwind-powered frontend UI** with a full lobby/control/board/replay experience.
 
 - **Server-authoritative game engine** (`src/engine/ludoEngine.js`)
-- **Room lifecycle + realtime multiplayer events** over Socket.IO (`src/server.js`, `src/rooms/roomStore.js`)
-- **Replay API** backed by ordered event logs (`/api/replay/:roomId`, `src/events/eventLogStore.js`)
-- **Frontend client** for room create/join, start game, roll/move controls, and replay timeline (`frontend/src`)
+- **Room lifecycle + realtime multiplayer events** (`src/server.js`, `src/rooms/roomStore.js`)
+- **Replay event pipeline** (`src/events/eventLogStore.js`, `src/db/postgresStore.js`)
+- **Frontend client** (`frontend/src`)
 
 ## Repository structure
 
@@ -37,6 +43,24 @@ npm install
 npm --prefix frontend install
 ```
 
+## Local database setup
+
+The backend uses PostgreSQL by default.
+
+Default local connection:
+
+```bash
+postgresql://postgres:postgres@localhost:5432/ludox
+```
+
+You can override with `DATABASE_URL`.
+
+Initialize schema manually (optional; backend also initializes at startup):
+
+```bash
+npm run db:init
+```
+
 ## Run locally
 
 Backend (port `3000` by default):
@@ -56,6 +80,11 @@ The frontend expects backend endpoints at `http://localhost:3000` unless overrid
 - `VITE_SOCKET_URL`
 - `VITE_API_BASE_URL`
 
+Auth env vars (backend):
+
+- `JWT_SECRET` (recommended for local/dev)
+- `JWT_EXPIRES_IN` (optional, default `7d`)
+
 ## Root scripts
 
 - `npm run dev:backend` – run backend with watch mode
@@ -67,6 +96,9 @@ The frontend expects backend endpoints at `http://localhost:3000` unless overrid
 ## API endpoints
 
 - `GET /health` – service health check
+- `POST /api/auth/register` – create account
+- `POST /api/auth/login` – login and return JWT
+- `GET /api/auth/me` – current account from bearer token
 - `GET /api/replay/:roomId` – ordered room event log for replay UI
 
 ## Architecture overview (aligned to PRD)
@@ -79,7 +111,7 @@ Current architecture follows core PRD patterns for MVP:
 4. **Replay consumption**: Frontend fetches replay events through REST API and renders timeline playback data.
 5. **Room isolation**: `RoomStore` keeps game state and deduped action IDs per room.
 
-Future PRD items like persistent databases, matchmaking service, and leaderboard service are not yet implemented in this codebase.
+Matchmaking and leaderboard services are still open future enhancements.
 
 ## Redis + Kafka integration
 
@@ -100,7 +132,7 @@ If none of these are set, backend behavior remains local/in-memory and fully com
 
 ## Docker usage
 
-### 1) Start full stack (frontend + backend + Redis + Kafka)
+### 1) Start full stack (frontend + backend + postgres + Redis + Kafka)
 
 ```bash
 docker compose up --build
@@ -110,6 +142,7 @@ docker compose up --build
 
 - Frontend: `http://localhost:5173`
 - Backend: `http://localhost:3000`
+- PostgreSQL: `localhost:5432` (`postgres/postgres`, db `ludox`)
 - Redis: `localhost:6379`
 - Kafka broker: `localhost:9092`
 

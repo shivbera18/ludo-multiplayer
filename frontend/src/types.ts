@@ -40,6 +40,17 @@ export interface ReplayResponse {
   events: GameEvent[];
 }
 
+export interface AuthUser {
+  id: number;
+  username: string;
+  displayName: string;
+}
+
+export interface AuthResponse {
+  token: string;
+  user: AuthUser;
+}
+
 export interface AckResponse<T> {
   ok: boolean;
   error?: string;

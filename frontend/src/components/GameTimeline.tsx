@@ -30,18 +30,19 @@ export function GameTimeline({ events, room, onClear }: GameTimelineProps) {
   }, [events, filter, room]);
 
   return (
-    <section className="panel panel-feed">
-      <div className="panel-heading">
-        <h2 className="panel-title">Game timeline</h2>
-        <div className="row">
+    <section className="panel animate-floatIn">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h2 className="font-display text-lg font-bold text-slate-900">Game timeline</h2>
+        <div className="flex flex-wrap gap-2">
           <input
+            className="input"
             value={filter}
             onChange={(event) => setFilter(event.target.value)}
             placeholder="Filter events"
             aria-label="Filter game events"
           />
           <button
-            className="secondary-button"
+            className="btn-secondary"
             type="button"
             onClick={onClear}
             disabled={events.length === 0}
@@ -51,19 +52,22 @@ export function GameTimeline({ events, room, onClear }: GameTimelineProps) {
         </div>
       </div>
 
-      <p>
+      <p className="mt-3 text-sm text-slate-700">
         Feed events: <strong>{filteredEvents.length}</strong> / {events.length}
       </p>
 
-      <ol className="timeline" aria-live="polite">
+      <ol className="mt-3 grid max-h-72 gap-2 overflow-auto" aria-live="polite">
         {filteredEvents.length === 0 ? (
-          <li className="timeline-item muted">No events yet.</li>
+          <li className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-slate-600">No events yet.</li>
         ) : (
           filteredEvents
             .slice()
             .reverse()
             .map((event) => (
-              <li key={`${event.sequence}-${event.type}-${event.timestamp}`} className="timeline-item">
+              <li
+                key={`${event.sequence}-${event.type}-${event.timestamp}`}
+                className="rounded-lg border border-amber-200 bg-white px-3 py-2 text-sm text-slate-700"
+              >
                 <strong>#{event.sequence}</strong> {describeGameEvent(event)} ·{' '}
                 {getPlayerName(room, event.playerId ?? null)} · {eventTimestampLabel(event.timestamp)}
               </li>

@@ -32,12 +32,27 @@ function getPlayerClass(playerOrder: string[], playerId: string) {
   return PLAYER_COLORS[index % PLAYER_COLORS.length];
 }
 
+function tokenBgClass(playerClass: string) {
+  switch (playerClass) {
+    case 'player-red':
+      return 'bg-rose-500';
+    case 'player-blue':
+      return 'bg-sky-500';
+    case 'player-green':
+      return 'bg-emerald-500';
+    case 'player-yellow':
+      return 'bg-amber-400';
+    default:
+      return 'bg-slate-500';
+  }
+}
+
 export function LudoBoard({ room, gameState, myPlayerId }: LudoBoardProps) {
   if (!room) {
     return (
       <section className="panel">
-        <h2 className="panel-title">Ludo board</h2>
-        <p>Create or join a room to begin.</p>
+        <h2 className="font-display text-lg font-bold">Ludo board</h2>
+        <p className="mt-2 text-sm text-slate-700">Create or join a room to begin.</p>
       </section>
     );
   }
@@ -45,8 +60,8 @@ export function LudoBoard({ room, gameState, myPlayerId }: LudoBoardProps) {
   if (!gameState) {
     return (
       <section className="panel">
-        <h2 className="panel-title">Ludo board</h2>
-        <p>Waiting for host to start the game.</p>
+        <h2 className="font-display text-lg font-bold">Ludo board</h2>
+        <p className="mt-2 text-sm text-slate-700">Waiting for host to start the game.</p>
       </section>
     );
   }
@@ -55,57 +70,107 @@ export function LudoBoard({ room, gameState, myPlayerId }: LudoBoardProps) {
   const currentTurnPlayerId = getCurrentTurnPlayerId(gameState);
 
   return (
-    <section className="panel panel-board">
-      <div className="panel-heading">
-        <h2 className="panel-title">Ludo board</h2>
-        <div className="board-status-row">
-          <span className="status-chip">
+    <section className="panel animate-floatIn">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h2 className="font-display text-lg font-bold">Ludo board</h2>
+        <div className="flex flex-wrap gap-2">
+          <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-800">
             Turn: <strong>{getPlayerName(room, currentTurnPlayerId)}</strong>
           </span>
           {gameState.winner ? (
-            <span className="status-chip winner-chip" role="status" aria-live="polite">
+            <span
+              className="rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-semibold text-sky-800"
+              role="status"
+              aria-live="polite"
+            >
               Winner: <strong>{getPlayerName(room, gameState.winner)}</strong>
             </span>
           ) : null}
         </div>
       </div>
 
-      <div className="players-grid">
-        {gameState.playerOrder.map((playerId) => {
-          const tokens = gameState.players[playerId]?.tokens ?? [];
-          const playerName = getPlayerName(room, playerId);
-          const isCurrentTurn = playerId === currentTurnPlayerId;
-          const isWinner = gameState.winner === playerId;
-          const isMe = myPlayerId === playerId;
+      <div className="mt-4 grid gap-3 lg:grid-cols-2">
+        <div className="rounded-2xl border border-board-line bg-board-bg p-3">
+          <div className="grid grid-cols-3 gap-2">
+            {gameState.playerOrder.slice(0, 4).map((playerId, index) => {
+              const playerName = getPlayerName(room, playerId);
+              const playerClass = getPlayerClass(gameState.playerOrder, playerId);
+              const tokenColor = tokenBgClass(playerClass);
+              const tokens = gameState.players[playerId]?.tokens ?? [];
 
-          return (
-            <article
-              key={playerId}
-              className={`player-card ${getPlayerClass(gameState.playerOrder, playerId)} ${
-                isCurrentTurn ? 'current-turn' : ''
-              } ${isWinner ? 'is-winner' : ''}`.trim()}
-            >
-              <h3>
-                {playerName}
-                {isMe ? ' (You)' : ''}
-              </h3>
-              <p className="player-id">{playerId}</p>
-              <div className="token-strip">
-                {tokens.map((position, index) => (
-                  <span key={`${playerId}-${index}`} className="token-pill">
-                    T{index + 1}: {humanTokenPosition(position)}
-                  </span>
-                ))}
-              </div>
-              {isCurrentTurn ? <small className="turn-marker">Current turn</small> : null}
-              {isWinner ? <small className="winner-marker">Winner</small> : null}
-            </article>
-          );
-        })}
+              const positionClass =
+                index === 0
+                  ? 'col-start-1 row-start-1'
+                  : index === 1
+                    ? 'col-start-3 row-start-1'
+                    : index === 2
+                      ? 'col-start-1 row-start-3'
+                      : 'col-start-3 row-start-3';
+
+              return (
+                <div key={`house-${playerId}`} className={`${positionClass} rounded-xl border border-board-line bg-white p-2`}>
+                  <p className="truncate text-xs font-semibold text-slate-700">{playerName}</p>
+                  <div className="mt-2 grid grid-cols-2 gap-2">
+                    {tokens.map((position, tokenIndex) => (
+                      <div
+                        key={`${playerId}-${tokenIndex}`}
+                        className={`flex h-10 items-center justify-center rounded-full text-xs font-bold text-white ${tokenColor}`}
+                      >
+                        {position < 0 ? 'H' : position === 57 ? 'G' : tokenIndex + 1}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+            <div className="col-start-2 row-start-2 flex items-center justify-center rounded-xl border border-dashed border-amber-400 bg-amber-50 p-2 text-center text-xs font-semibold text-amber-900">
+              Ludo Center
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-board-line bg-white p-3">
+          <h3 className="font-display text-sm font-bold text-slate-800">Players and token positions</h3>
+          <div className="mt-3 grid gap-2">
+            {gameState.playerOrder.map((playerId) => {
+              const tokens = gameState.players[playerId]?.tokens ?? [];
+              const playerName = getPlayerName(room, playerId);
+              const isCurrentTurn = playerId === currentTurnPlayerId;
+              const isWinner = gameState.winner === playerId;
+              const isMe = myPlayerId === playerId;
+
+              return (
+                <article
+                  key={playerId}
+                  className={`rounded-xl border p-3 ${
+                    isCurrentTurn
+                      ? 'border-sky-300 bg-sky-50'
+                      : isWinner
+                        ? 'border-emerald-300 bg-emerald-50'
+                        : 'border-amber-200 bg-amber-50/50'
+                  }`}
+                >
+                  <h3 className="text-sm font-semibold text-slate-900">
+                    {playerName}
+                    {isMe ? ' (You)' : ''}
+                  </h3>
+                  <p className="text-xs text-slate-500">{playerId}</p>
+                  <div className="mt-2 flex flex-wrap gap-1">
+                    {tokens.map((position, index) => (
+                      <span key={`${playerId}-${index}`} className="rounded-full border border-amber-300 bg-white px-2 py-0.5 text-xs text-slate-700">
+                        T{index + 1}: {humanTokenPosition(position)}
+                      </span>
+                    ))}
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        </div>
       </div>
 
-      <h3>Track occupancy (0-57)</h3>
-      <div className="track-grid" aria-label="track-grid">
+      <h3 className="mt-4 font-display text-sm font-bold text-slate-800">Track occupancy (0-57)</h3>
+      <div className="mt-2 grid max-h-[320px] grid-cols-3 gap-2 overflow-auto sm:grid-cols-6 md:grid-cols-9 lg:grid-cols-12" aria-label="track-grid">
         {Array.from({ length: 58 }, (_, index) => {
           const players = occupancy.get(index) ?? [];
           const isGoal = index === 57;
@@ -113,25 +178,35 @@ export function LudoBoard({ room, gameState, myPlayerId }: LudoBoardProps) {
           return (
             <div
               key={index}
-              className={`track-cell ${players.length ? 'occupied' : ''} ${isGoal ? 'goal-cell' : ''} ${
-                isStart ? 'start-cell' : ''
-              }`.trim()}
+              className={`rounded-lg border p-2 text-xs ${
+                isGoal
+                  ? 'border-emerald-300 bg-emerald-50'
+                  : isStart
+                    ? 'border-sky-300 bg-sky-50'
+                    : players.length
+                      ? 'border-amber-300 bg-amber-50'
+                      : 'border-amber-200 bg-white'
+              }`}
             >
-              <strong>{index}</strong>
-              <div className="track-cell-tokens">
+              <strong className="text-slate-700">{index}</strong>
+              <div className="mt-1 flex flex-wrap gap-1">
                 {players.length ? (
-                  players.map(({ playerId, tokenIndex }) => (
-                    <span
-                      key={`${index}-${playerId}-${tokenIndex}`}
-                      className={`track-token ${getPlayerClass(gameState.playerOrder, playerId)}`}
-                      title={`${getPlayerName(room, playerId)} token ${tokenIndex + 1}`}
-                    >
-                      {getPlayerName(room, playerId).slice(0, 1).toUpperCase()}
-                      {tokenIndex + 1}
-                    </span>
-                  ))
+                  players.map(({ playerId, tokenIndex }) => {
+                    const playerClass = getPlayerClass(gameState.playerOrder, playerId);
+                    const tokenColor = tokenBgClass(playerClass);
+                    return (
+                      <span
+                        key={`${index}-${playerId}-${tokenIndex}`}
+                        className={`inline-flex min-w-8 items-center justify-center rounded-full px-2 py-0.5 text-[10px] font-semibold text-white ${tokenColor}`}
+                        title={`${getPlayerName(room, playerId)} token ${tokenIndex + 1}`}
+                      >
+                        {getPlayerName(room, playerId).slice(0, 1).toUpperCase()}
+                        {tokenIndex + 1}
+                      </span>
+                    );
+                  })
                 ) : (
-                  <span className="empty-track-cell">—</span>
+                  <span className="text-slate-400">—</span>
                 )}
               </div>
             </div>

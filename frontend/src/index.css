@@ -1,37 +1,40 @@
-:root {
-  --font-body: "Space Grotesk", "Avenir Next", "Segoe UI", sans-serif;
-  --bg: #f4efe6;
-  --ink: #1f1f1f;
-  --ink-soft: #4b4b4b;
-  --paper: #fffdf8;
-  --stroke: #d8ccb8;
-  --accent: #1d5a73;
-  --accent-soft: #d6ebf3;
-  --danger: #a53434;
-  --ok: #1d7848;
-  --shadow: 0 14px 35px rgba(54, 36, 8, 0.12);
-  --radius: 16px;
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Sora:wght@500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply box-border;
+  }
+
+  body {
+    @apply m-0 min-h-screen font-body text-slate-900;
+    background:
+      radial-gradient(circle at 8% 10%, rgba(255, 185, 103, 0.35), transparent 30%),
+      radial-gradient(circle at 84% 16%, rgba(103, 191, 255, 0.3), transparent 33%),
+      radial-gradient(circle at 50% 100%, rgba(80, 180, 120, 0.18), transparent 42%),
+      linear-gradient(180deg, #fbf5e8 0%, #f3e9d5 100%);
+  }
 }
 
-* {
-  box-sizing: border-box;
-}
+@layer components {
+  .panel {
+    @apply rounded-2xl border border-amber-200/90 bg-board-paper p-4 shadow-panel;
+  }
 
-body {
-  margin: 0;
-  font-family: var(--font-body);
-  color: var(--ink);
-  background:
-    radial-gradient(circle at 10% 10%, #f8dbc0 0, transparent 28%),
-    radial-gradient(circle at 80% 15%, #d7eef4 0, transparent 30%),
-    linear-gradient(180deg, #f8f2e9 0%, #eee6d8 100%);
-  min-height: 100vh;
-}
+  .input {
+    @apply w-full rounded-xl border border-amber-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-200;
+  }
 
-#root {
-  max-width: 1220px;
-  margin: 0 auto;
-  padding: 1.6rem;
+  .btn-primary {
+    @apply rounded-xl bg-gradient-to-b from-sky-700 to-sky-800 px-4 py-2 text-sm font-semibold text-white shadow transition hover:-translate-y-0.5 hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
+  .btn-secondary {
+    @apply rounded-xl border border-amber-300 bg-gradient-to-b from-amber-50 to-amber-100 px-4 py-2 text-sm font-semibold text-slate-800 transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60;
+  }
 }
 
 .layout {
