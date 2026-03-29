@@ -29,6 +29,7 @@ export const initialState: FrontendGameState = {
 };
 
 type GameAction =
+  | { type: 'session:reset' }
   | { type: 'connection'; connected: boolean }
   | { type: 'request:start' }
   | { type: 'request:end' }
@@ -46,6 +47,8 @@ type GameAction =
 
 export function gameReducer(state: FrontendGameState, action: GameAction): FrontendGameState {
   switch (action.type) {
+    case 'session:reset':
+      return { ...initialState };
     case 'connection':
       return {
         ...state,
