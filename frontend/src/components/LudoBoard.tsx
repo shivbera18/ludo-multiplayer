@@ -1,4 +1,4 @@
-import { getCurrentTurnPlayerId, getPlayerName } from '../state/gameState';
+import { getPlayerName } from '../state/gameState';
 import type { LudoGameState, RoomSnapshot } from '../types';
 
 interface LudoBoardProps {
@@ -8,270 +8,282 @@ interface LudoBoardProps {
   movableTokens: number[];
   isMyTurn: boolean;
   isSubmitting: boolean;
+  canRoll: boolean;
+  lastDice: number | null;
   onMoveToken: (tokenIndex: number) => Promise<void>;
+  onRollDice: () => Promise<void>;
 }
 
 type Coord = [number, number];
 
 const PLAYER_STYLES = [
-  {
-    token: 'bg-rose-500 text-white border-black',
-    houseBg: 'bg-rose-400'
-  },
-  {
-    token: 'bg-emerald-400 text-black border-black',
-    houseBg: 'bg-emerald-400'
-  },
-  {
-    token: 'bg-yellow-300 text-black border-black',
-    houseBg: 'bg-yellow-300'
-  },
-  {
-    token: 'bg-sky-400 text-black border-black',
-    houseBg: 'bg-sky-300'
-  }
+  { token: 'bg-rose-500 text-white border-rose-200', house: 'bg-rose-100', lane: 'bg-rose-200' },
+  { token: 'bg-emerald-500 text-white border-emerald-200', house: 'bg-emerald-100', lane: 'bg-emerald-200' },
+  { token: 'bg-amber-400 text-slate-900 border-amber-200', house: 'bg-amber-100', lane: 'bg-amber-200' },
+  { token: 'bg-sky-500 text-white border-sky-200', house: 'bg-sky-100', lane: 'bg-sky-200' }
 ] as const;
 
-const TRACK: Coord[] = [
+const PLAYER_START_OFFSETS = [0, 13, 26, 39];
+
+const MAIN_RING: Coord[] = [
   [6, 1], [6, 2], [6, 3], [6, 4], [6, 5], [5, 6], [4, 6], [3, 6], [2, 6], [1, 6], [0, 6], [0, 7], [0, 8], [1, 8],
   [2, 8], [3, 8], [4, 8], [5, 8], [6, 9], [6, 10], [6, 11], [6, 12], [6, 13], [6, 14], [7, 14], [8, 14], [8, 13], [8, 12],
   [8, 11], [8, 10], [8, 9], [9, 8], [10, 8], [11, 8], [12, 8], [13, 8], [14, 8], [14, 7], [14, 6], [13, 6], [12, 6],
-  [11, 6], [10, 6], [9, 6], [8, 5], [8, 4], [8, 3], [8, 2], [8, 1], [8, 0], [7, 0], [6, 0], [7, 1], [7, 2], [7, 3],
-  [7, 4], [7, 5]
+  [11, 6], [10, 6], [9, 6], [8, 5], [8, 4], [8, 3], [8, 2], [8, 1], [8, 0], [7, 0], [6, 0]
 ];
+
+const SAFE_RING_POSITIONS = new Set([0, 8, 13, 21, 26, 34, 39, 47]);
 
 const YARD_SPOTS: Coord[][] = [
-  [
-    [10, 1],
-    [12, 1],
-    [10, 3],
-    [12, 3]
-  ],
-  [
-    [10, 10],
-    [12, 10],
-    [10, 12],
-    [12, 12]
-  ],
-  [
-    [1, 10],
-    [3, 10],
-    [1, 12],
-    [3, 12]
-  ],
-  [
-    [1, 1],
-    [3, 1],
-    [1, 3],
-    [3, 3]
-  ]
+  [[10, 1], [12, 1], [10, 3], [12, 3]],
+  [[10, 10], [12, 10], [10, 12], [12, 12]],
+  [[1, 10], [3, 10], [1, 12], [3, 12]],
+  [[1, 1], [3, 1], [1, 3], [3, 3]]
 ];
 
-function keyOf([x, y]: Coord): string {
+function rotateClockwise([x, y]: Coord): Coord {
+  return [14 - y, x];
+}
+
+function rotateCoord(coord: Coord, turns: number): Coord {
+  let next = coord;
+  for (let i = 0; i < turns; i += 1) {
+    next = rotateClockwise(next);
+  }
+  return next;
+}
+
+const RED_HOME_LANE: Coord[] = [[7, 1], [7, 2], [7, 3], [7, 4], [7, 5], [7, 6]];
+const HOME_LANES: Coord[][] = [
+  RED_HOME_LANE,
+  RED_HOME_LANE.map((coord) => rotateCoord(coord, 1)),
+  RED_HOME_LANE.map((coord) => rotateCoord(coord, 2)),
+  RED_HOME_LANE.map((coord) => rotateCoord(coord, 3))
+];
+
+const DICE_FACE: Record<number, string> = {
+  1: '⚀',
+  2: '⚁',
+  3: '⚂',
+  4: '⚃',
+  5: '⚄',
+  6: '⚅'
+};
+
+function getCellKey([x, y]: Coord): string {
   return `${x},${y}`;
 }
 
-function getPlayerIndex(gameState: LudoGameState, playerId: string): number {
-  const index = gameState.playerOrder.indexOf(playerId);
-  if (index < 0) return 0;
-  return index % 4;
+function getPlayerIndex(state: LudoGameState, playerId: string): number {
+  const idx = state.playerOrder.indexOf(playerId);
+  return idx < 0 ? 0 : idx % 4;
 }
 
-function getCellBackgroundClass(x: number, y: number): string {
-  if (x <= 5 && y <= 5) return 'bg-sky-300';
-  if (x >= 9 && y <= 5) return 'bg-rose-400';
-  if (x <= 5 && y >= 9) return 'bg-yellow-300';
-  if (x >= 9 && y >= 9) return 'bg-emerald-400';
+function getBoardCoord(playerIndex: number, tokenIndex: number, position: number): Coord {
+  if (position < 0) {
+    return YARD_SPOTS[playerIndex]?.[tokenIndex] ?? YARD_SPOTS[playerIndex]?.[0] ?? [7, 7];
+  }
 
-  const inCross = (x >= 6 && x <= 8) || (y >= 6 && y <= 8);
-  if (inCross) return 'bg-white';
-  return 'bg-transparent';
+  if (position === 57) {
+    return [7, 7];
+  }
+
+  if (position <= 50) {
+    const ringIndex = (position + (PLAYER_START_OFFSETS[playerIndex] ?? 0)) % MAIN_RING.length;
+    return MAIN_RING[ringIndex] ?? MAIN_RING[0];
+  }
+
+  const laneIndex = position - 51;
+  return HOME_LANES[playerIndex]?.[laneIndex] ?? [7, 7];
 }
 
-function laneClass(x: number, y: number): string {
-  if (x === 7 && y >= 1 && y <= 5) return 'bg-rose-400';
-  if (y === 7 && x >= 9 && x <= 13) return 'bg-emerald-400';
-  if (x === 7 && y >= 9 && y <= 13) return 'bg-yellow-300';
-  if (y === 7 && x >= 1 && x <= 5) return 'bg-sky-300';
-  return '';
+function getBaseCellClass(x: number, y: number): string {
+  if (x <= 5 && y <= 5) return 'bg-sky-50';
+  if (x >= 9 && y <= 5) return 'bg-rose-50';
+  if (x <= 5 && y >= 9) return 'bg-amber-50';
+  if (x >= 9 && y >= 9) return 'bg-emerald-50';
+  return 'bg-slate-50';
 }
 
-export function LudoBoard({ room, gameState, myPlayerId, movableTokens, isMyTurn, isSubmitting, onMoveToken }: LudoBoardProps) {
-  const fallbackMeId = myPlayerId || 'you';
-  const basePlayers = room?.players ?? [{ playerId: fallbackMeId, name: 'You' }];
-  const previewPlayers = [...basePlayers];
-  const previewNames = ['Scarlet', 'Emerald', 'Amber'];
-  for (let i = previewPlayers.length; i < 4; i += 1) {
+export function LudoBoard({
+  room,
+  gameState,
+  myPlayerId,
+  movableTokens,
+  isMyTurn,
+  isSubmitting,
+  canRoll,
+  lastDice,
+  onMoveToken,
+  onRollDice
+}: LudoBoardProps) {
+  const fallbackMe = myPlayerId || 'you';
+  const roomPlayers = room?.players ?? [{ playerId: fallbackMe, name: 'You' }];
+  const previewPlayers = [...roomPlayers];
+  while (previewPlayers.length < 4) {
     previewPlayers.push({
-      playerId: `preview-bot-${i}`,
-      name: previewNames[i - 1] ?? `Player ${i + 1}`
+      playerId: `preview-${previewPlayers.length}`,
+      name: `Player ${previewPlayers.length + 1}`
     });
   }
 
-  const boardRoom: RoomSnapshot = {
-    roomId: room?.roomId ?? 'preview-room',
-    status: room?.status ?? 'waiting',
-    players: gameState ? basePlayers : previewPlayers,
-    gameState: gameState ?? null
-  };
-
+  const boardPlayers = gameState ? roomPlayers : previewPlayers;
   const boardState: LudoGameState =
     gameState ?? {
       status: 'active',
-      playerOrder: boardRoom.players.slice(0, 4).map((player) => player.playerId),
+      playerOrder: boardPlayers.slice(0, 4).map((player) => player.playerId),
       currentTurn: 0,
       lastDice: null,
       winner: null,
-      players: Object.fromEntries(
-        boardRoom.players.slice(0, 4).map((player) => [player.playerId, { tokens: [-1, -1, -1, -1] }])
-      )
+      players: Object.fromEntries(boardPlayers.slice(0, 4).map((player) => [player.playerId, { tokens: [-1, -1, -1, -1] }]))
     };
 
-  const isLiveGame = Boolean(gameState && room);
-  const currentTurnPlayerId = getCurrentTurnPlayerId(boardState);
+  const currentTurnPlayerId = boardState.playerOrder[boardState.currentTurn] ?? null;
 
-  const tokensByCell = new Map<string, Array<{ playerId: string; tokenIndex: number; isHome: boolean; position: number }>>();
+  const ringPositionByKey = new Map<string, number>();
+  MAIN_RING.forEach((coord, index) => {
+    ringPositionByKey.set(getCellKey(coord), index);
+  });
 
+  const laneKeyByPlayerIndex = HOME_LANES.map((lane) => new Set(lane.map(getCellKey)));
+
+  const tokensByCell = new Map<string, Array<{ playerId: string; tokenIndex: number; position: number }>>();
   boardState.playerOrder.forEach((playerId) => {
-    const player = boardState.players[playerId];
-    if (!player) return;
-
     const playerIndex = getPlayerIndex(boardState, playerId);
-    player.tokens.forEach((position, tokenIndex) => {
-      let coord: Coord;
-      if (position < 0) {
-        coord = YARD_SPOTS[playerIndex][tokenIndex] ?? YARD_SPOTS[playerIndex][0];
-      } else if (position === 57) {
-        coord = [7, 7];
-      } else {
-        coord = TRACK[position] ?? TRACK[0];
-      }
-      const key = keyOf(coord);
-      const row = tokensByCell.get(key) ?? [];
-      row.push({ playerId, tokenIndex, isHome: position === 57, position });
-      tokensByCell.set(key, row);
+    const tokenPositions = boardState.players[playerId]?.tokens ?? [];
+    tokenPositions.forEach((position, tokenIndex) => {
+      const coord = getBoardCoord(playerIndex, tokenIndex, position);
+      const key = getCellKey(coord);
+      const list = tokensByCell.get(key) ?? [];
+      list.push({ playerId, tokenIndex, position });
+      tokensByCell.set(key, list);
     });
   });
 
   return (
     <section className="panel animate-floatIn">
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <h2 className="font-display text-2xl font-black uppercase tracking-wide text-black">Ludo Arena</h2>
-        <div className="flex flex-wrap gap-2">
-          <span className="rounded-none border-2 border-black bg-white px-3 py-1 text-xs font-bold text-black shadow-[2px_2px_0_0_#000]">
-            Turn: {getPlayerName(boardRoom, currentTurnPlayerId)}
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <h2 className="text-xl font-semibold text-slate-900">Ludo Game Board</h2>
+          <p className="text-xs text-slate-500">Click center dice on your turn, then move a highlighted token.</p>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2 text-xs">
+          <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 font-medium text-slate-700">
+            Turn: {getPlayerName(room, currentTurnPlayerId)}
+          </span>
+          <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 font-medium text-slate-700">
+            Dice: {lastDice ?? '-'}
           </span>
           {boardState.winner ? (
-            <span className="rounded-none border-2 border-black bg-emerald-400 px-3 py-1 text-xs font-bold text-black shadow-[2px_2px_0_0_#000]">
-              Winner: {getPlayerName(boardRoom, boardState.winner)}
-            </span>
-          ) : null}
-          {!isLiveGame ? (
-            <span className="rounded-none border-2 border-black bg-yellow-300 px-3 py-1 text-xs font-bold text-black shadow-[2px_2px_0_0_#000]">
-              {room ? 'Waiting for host to start' : 'Board preview: join or create room'}
+            <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 font-medium text-emerald-700">
+              Winner: {getPlayerName(room, boardState.winner)}
             </span>
           ) : null}
         </div>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
-        <div className="mx-auto w-full max-w-[760px] rounded-none border-4 border-black bg-white p-2 shadow-[8px_8px_0_0_#000]">
-          <div className="grid aspect-square grid-cols-[repeat(15,minmax(0,1fr))] grid-rows-[repeat(15,minmax(0,1fr))] gap-[2px] bg-black p-[2px]">
-            {Array.from({ length: 15 * 15 }, (_, i) => {
-              const x = i % 15;
-              const y = Math.floor(i / 15);
-              const key = `${x},${y}`;
-              const inCenter = x >= 6 && x <= 8 && y >= 6 && y <= 8;
-              const lane = laneClass(x, y);
-              const tokens = tokensByCell.get(key) ?? [];
+      <div className="mx-auto w-full max-w-[760px] rounded-2xl border border-slate-200 bg-white p-2 shadow-sm">
+        <div className="grid aspect-square grid-cols-[repeat(15,minmax(0,1fr))] grid-rows-[repeat(15,minmax(0,1fr))] gap-[2px] rounded-xl bg-slate-200 p-[2px]">
+          {Array.from({ length: 225 }, (_, index) => {
+            const x = index % 15;
+            const y = Math.floor(index / 15);
+            const key = `${x},${y}`;
+            const tokens = tokensByCell.get(key) ?? [];
+            const isCenter = x === 7 && y === 7;
 
-              return (
-                <div
-                  key={key}
-                  className={`relative flex items-center justify-center overflow-hidden border-2 border-black ${getCellBackgroundClass(
-                    x,
-                    y
-                  )} ${lane}`}
-                >
-                  {inCenter ? (
-                    <div className="text-[10px] font-extrabold tracking-wide text-black">FINISH</div>
-                  ) : null}
+            let laneClass = '';
+            laneKeyByPlayerIndex.forEach((laneKeys, lanePlayerIndex) => {
+              if (laneKeys.has(key)) {
+                laneClass = PLAYER_STYLES[lanePlayerIndex].lane;
+              }
+            });
 
-                  <div className="absolute inset-0 flex flex-wrap content-center justify-center gap-[2px] p-[1px]">
-                    {tokens.map((token) => {
-                      const pIndex = getPlayerIndex(boardState, token.playerId);
-                      const style = PLAYER_STYLES[pIndex];
-                      const isMine = token.playerId === myPlayerId;
-                      const canMove =
-                        isLiveGame &&
-                        isMine &&
-                        isMyTurn &&
-                        movableTokens.includes(token.tokenIndex) &&
-                        !isSubmitting &&
-                        token.position !== 57;
+            const ringPosition = ringPositionByKey.get(key);
+            const isRing = ringPosition !== undefined;
+            const isSafe = ringPosition !== undefined && SAFE_RING_POSITIONS.has(ringPosition);
 
-                      return (
-                        <button
-                          key={`${token.playerId}-${token.tokenIndex}-${key}`}
-                          className={`flex h-6 w-6 items-center justify-center rounded-none border-2 text-[9px] font-extrabold shadow-[2px_2px_0_0_#000] transition ${
-                            style.token
-                          } ${canMove ? 'ring-2 ring-yellow-300 hover:scale-110 cursor-pointer' : 'opacity-95 cursor-default'}`}
-                          title={`${getPlayerName(boardRoom, token.playerId)} token ${token.tokenIndex + 1}`}
-                          type="button"
-                          disabled={!canMove}
-                          onClick={() => void onMoveToken(token.tokenIndex)}
-                        >
-                          {token.tokenIndex + 1}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+            const cellClass = laneClass || (isRing ? 'bg-white' : getBaseCellClass(x, y));
 
-        <aside className="grid content-start gap-3">
-          <div className="rounded-none border-4 border-black bg-white p-3 shadow-[4px_4px_0_0_#000]">
-            <h3 className="font-display text-sm font-bold text-black uppercase tracking-wider">Player Houses</h3>
-            <div className="mt-2 grid gap-2">
-              {boardState.playerOrder.map((playerId) => {
-                const pIndex = getPlayerIndex(boardState, playerId);
-                const style = PLAYER_STYLES[pIndex];
-                const isTurn = playerId === currentTurnPlayerId;
-                const isWinner = boardState.winner === playerId;
-                const tokens = boardState.players[playerId]?.tokens ?? [];
+            return (
+              <div key={key} className={`relative flex items-center justify-center rounded-[3px] border border-slate-200 ${cellClass}`}>
+                {isSafe ? <span className="pointer-events-none absolute h-2 w-2 rounded-full bg-slate-400" /> : null}
 
-                return (
-                  <article
-                    key={playerId}
-                    className={`border-4 p-2 shadow-[2px_2px_0_0_#000] ${style.houseBg} ${
-                      isTurn ? 'border-black' : isWinner ? 'border-yellow-400' : 'border-black'
+                {isCenter ? (
+                  <button
+                    type="button"
+                    className={`z-10 h-12 w-12 rounded-xl border border-slate-300 text-lg font-semibold shadow-sm transition ${
+                      canRoll && !isSubmitting ? 'bg-sky-600 text-white hover:bg-sky-700' : 'bg-slate-200 text-slate-500'
                     }`}
+                    onClick={() => void onRollDice()}
+                    disabled={!canRoll || isSubmitting}
+                    title={isMyTurn ? 'Roll dice' : 'Wait for your turn'}
                   >
-                    <div className="mb-1 flex items-center justify-between">
-                      <p className="text-sm font-bold text-black">{getPlayerName(boardRoom, playerId)}</p>
-                      <span className="text-[11px] font-black text-black bg-white px-1 border-2 border-black">{isTurn ? 'TURN' : isWinner ? 'WIN' : 'PLAY'}</span>
-                    </div>
-                    <div className="flex flex-wrap gap-1">
-                      {tokens.map((position, idx) => (
-                        <span key={`${playerId}-${idx}`} className="border-2 border-black bg-white px-1 py-0.5 text-[10px] font-bold text-black">
-                          #{idx + 1} {position < 0 ? 'Yard' : position === 57 ? 'Home' : `P${position}`}
-                        </span>
-                      ))}
-                    </div>
-                  </article>
-                );
-              })}
-            </div>
-          </div>
+                    {Number.isInteger(lastDice) ? DICE_FACE[lastDice as number] : 'Roll'}
+                  </button>
+                ) : null}
 
-          <div className="rounded-none border-4 border-black bg-blue-300 p-3 text-xs font-bold text-black shadow-[4px_4px_0_0_#000]">
-            <p className="font-extrabold uppercase">Move Hint</p>
-            <p className="mt-1">Roll dice, then tap any highlighted yellow-ring chip on the board to move.</p>
-          </div>
-        </aside>
+                <div className="absolute inset-0 flex flex-wrap content-center justify-center gap-[2px] p-[1px]">
+                  {tokens.map((token) => {
+                    const playerIndex = getPlayerIndex(boardState, token.playerId);
+                    const canMove =
+                      token.playerId === myPlayerId &&
+                      isMyTurn &&
+                      !isSubmitting &&
+                      token.position !== 57 &&
+                      movableTokens.includes(token.tokenIndex);
+
+                    return (
+                      <button
+                        key={`${token.playerId}-${token.tokenIndex}-${key}`}
+                        type="button"
+                        className={`h-5 w-5 rounded-full border text-[10px] font-bold shadow-sm transition ${PLAYER_STYLES[playerIndex].token} ${
+                          canMove ? 'ring-2 ring-sky-300' : 'opacity-95'
+                        }`}
+                        onClick={() => void onMoveToken(token.tokenIndex)}
+                        disabled={!canMove}
+                        title={`${getPlayerName(room, token.playerId)} token ${token.tokenIndex + 1}`}
+                      >
+                        {token.tokenIndex + 1}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+        {boardState.playerOrder.map((playerId) => {
+          const playerIndex = getPlayerIndex(boardState, playerId);
+          const isTurn = playerId === currentTurnPlayerId;
+          const tokens = boardState.players[playerId]?.tokens ?? [];
+
+          return (
+            <div
+              key={playerId}
+              className={`rounded-xl border p-3 text-xs ${PLAYER_STYLES[playerIndex].house} ${
+                isTurn ? 'border-sky-300' : 'border-slate-200'
+              }`}
+            >
+              <div className="mb-2 flex items-center justify-between">
+                <span className="font-semibold text-slate-800">{getPlayerName(room, playerId)}</span>
+                <span className="rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[10px] font-medium text-slate-600">
+                  {isTurn ? 'TURN' : 'WAIT'}
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-1">
+                {tokens.map((position, tokenIndex) => (
+                  <span key={`${playerId}-${tokenIndex}`} className="rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[10px] font-medium text-slate-700">
+                    #{tokenIndex + 1} {position < 0 ? 'Yard' : position === 57 ? 'Home' : position}
+                  </span>
+                ))}
+              </div>
+            </div>
+          );
+        })}
       </div>
     </section>
   );

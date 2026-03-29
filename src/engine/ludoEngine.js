@@ -1,6 +1,15 @@
 const TOKENS_PER_PLAYER = 4;
 const START_POSITION = -1;
 const HOME_POSITION = 57;
+const MAIN_TRACK_LENGTH = 52;
+const LAST_MAIN_TRACK_POSITION = 50;
+const PLAYER_START_OFFSETS = [0, 13, 26, 39];
+const SAFE_RING_POSITIONS = new Set([0, 8, 13, 21, 26, 34, 39, 47]);
+
+function toRingPosition(playerIndex, playerProgress) {
+  const startOffset = PLAYER_START_OFFSETS[playerIndex] ?? 0;
+  return (startOffset + playerProgress) % MAIN_TRACK_LENGTH;
+}
 
 export class LudoEngine {
   constructor(playerIds, options = {}) {
@@ -108,6 +117,8 @@ export class LudoEngine {
 
     player.tokens[tokenIndex] = next;
 
+    const captures = this.captureOpponentsOnLanding(playerId, tokenIndex, next);
+
     if (player.tokens.every((token) => token === HOME_POSITION)) {
       this.state.status = 'finished';
       this.state.winner = playerId;
@@ -122,9 +133,60 @@ export class LudoEngine {
       from: current,
       to: next,
       dice,
+      captures,
       nextTurnPlayerId: this.state.playerOrder[this.state.currentTurn],
       winner: this.state.winner
     };
+  }
+
+  captureOpponentsOnLanding(playerId, tokenIndex, landingPosition) {
+    if (landingPosition < 0 || landingPosition > LAST_MAIN_TRACK_POSITION) {
+      return [];
+    }
+
+    const moverIndex = this.state.playerOrder.indexOf(playerId);
+    if (moverIndex < 0) {
+      return [];
+    }
+
+    const landingRingPosition = toRingPosition(moverIndex, landingPosition);
+    if (SAFE_RING_POSITIONS.has(landingRingPosition)) {
+      return [];
+    }
+
+    const captures = [];
+
+    this.state.playerOrder.forEach((opponentId, opponentIndex) => {
+      if (opponentId === playerId) return;
+
+      const opponentTokens = this.state.players[opponentId]?.tokens;
+      if (!opponentTokens) return;
+
+      opponentTokens.forEach((opponentPosition, opponentTokenIndex) => {
+        if (opponentPosition < 0 || opponentPosition > LAST_MAIN_TRACK_POSITION) {
+          return;
+        }
+
+        const opponentRingPosition = toRingPosition(opponentIndex, opponentPosition);
+        if (opponentRingPosition !== landingRingPosition) {
+          return;
+        }
+
+        this.state.players[opponentId].tokens[opponentTokenIndex] = START_POSITION;
+        captures.push({
+          playerId: opponentId,
+          tokenIndex: opponentTokenIndex,
+          from: opponentPosition,
+          to: START_POSITION,
+          by: {
+            playerId,
+            tokenIndex
+          }
+        });
+      });
+    });
+
+    return captures;
   }
 
   skipTurn(playerId, reason = 'timeout') {
@@ -156,5 +218,8 @@ export class LudoEngine {
 export const EngineConstants = {
   TOKENS_PER_PLAYER,
   START_POSITION,
-  HOME_POSITION
+  HOME_POSITION,
+  MAIN_TRACK_LENGTH,
+  LAST_MAIN_TRACK_POSITION,
+  PLAYER_START_OFFSETS
 };

@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LudoBoard } from '../components/LudoBoard';
 import { RoomPanel } from '../components/RoomPanel';
 import { Button } from '../components/ui/button';
 import { useGame } from '../context/GameContext';
@@ -10,11 +9,7 @@ export default function Lobby() {
     auth,
     logout,
     state,
-    playerId,
     playerName,
-    movableTokens,
-    isMyTurn,
-    moveToken,
     createRoom,
     joinRoom,
     startGame,
@@ -40,24 +35,24 @@ export default function Lobby() {
   const canEnterArena = state.room?.status === 'active' || state.room?.status === 'finished';
 
   return (
-    <main className="mx-auto min-h-screen max-w-7xl p-4 sm:p-6">
+    <main className="mx-auto min-h-screen max-w-6xl p-4 sm:p-8">
       <header className="panel animate-floatIn">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <p className="inline-block border-4 border-black bg-emerald-300 px-2 py-1 text-xs font-black uppercase tracking-[0.14em] text-black shadow-[2px_2px_0_0_#000]">
-              Room Staging
+            <p className="inline-flex items-center rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-emerald-700">
+              Room Lobby
             </p>
-            <h1 className="mt-3 font-display text-4xl font-black uppercase text-black">Lobby Control Deck</h1>
-            <p className="mt-1 text-sm font-bold text-black/70">
-              Host your room, invite players, and launch the match when your squad is ready.
+            <h1 className="mt-3 text-3xl font-semibold text-slate-900 sm:text-4xl">Create or Join a Room</h1>
+            <p className="mt-1 text-sm text-slate-600">
+              Setup happens here. The game page is dedicated to the Ludo board only.
             </p>
           </div>
-          <div className="rounded-none border-4 border-black bg-yellow-300 px-3 py-2 text-right text-sm text-black shadow-[4px_4px_0_0_#000]">
-            <p className="font-bold">{auth.user.displayName}</p>
-            <p className="text-xs font-bold text-black/70">@{auth.user.username}</p>
+          <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-right text-sm text-slate-800">
+            <p className="font-semibold">{auth.user.displayName}</p>
+            <p className="text-xs text-slate-500">@{auth.user.username}</p>
             <div className="mt-2 flex gap-2">
               <Button variant="outline" type="button" onClick={() => navigate('/arena')} disabled={!canEnterArena}>
-                Arena
+                Enter Game
               </Button>
               <Button variant="outline" type="button" onClick={logout}>
                 Logout
@@ -67,50 +62,62 @@ export default function Lobby() {
         </div>
 
         {state.error ? (
-          <p className="mt-3 rounded-none border-4 border-black bg-rose-400 px-3 py-2 text-sm font-bold text-black shadow-[4px_4px_0_0_#000]" role="alert">
+          <p className="mt-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-medium text-rose-700" role="alert">
             {state.error}
           </p>
         ) : null}
 
         {state.info ? (
-          <p className="mt-3 rounded-none border-4 border-black bg-sky-300 px-3 py-2 text-sm font-bold text-black shadow-[4px_4px_0_0_#000]" role="status" aria-live="polite">
+          <p className="mt-3 rounded-xl border border-sky-200 bg-sky-50 px-3 py-2 text-sm font-medium text-sky-700" role="status" aria-live="polite">
             {state.info}
           </p>
         ) : null}
       </header>
 
-      <section className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1.4fr)_minmax(300px,1fr)]">
-        <div className="grid gap-4">
-          <LudoBoard
-            room={state.room}
-            gameState={state.gameState}
-            myPlayerId={playerId}
-            movableTokens={movableTokens}
-            isMyTurn={isMyTurn}
-            isSubmitting={state.isSubmitting}
-            onMoveToken={moveToken}
-          />
-
-          <div className="panel animate-floatIn">
-            <h2 className="font-display text-lg font-bold uppercase text-black">Flow</h2>
-            <p className="mt-2 text-sm font-bold text-black/70">
-              1. Create or join a room. 2. Wait for at least two players. 3. Host starts the game. 4. Move to arena for live turns.
-            </p>
-            <div className="mt-3 flex flex-wrap gap-2">
-              <Button type="button" onClick={() => navigate('/arena')} disabled={!canEnterArena}>
-                Enter Arena
-              </Button>
-              <Button type="button" variant="secondary" onClick={clearMessages}>
-                Dismiss Alerts
-              </Button>
+      <section className="mt-6 grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(320px,360px)]">
+        <div className="panel animate-floatIn">
+          <h2 className="text-lg font-semibold text-slate-900">Game Flow</h2>
+          <div className="mt-4 grid gap-3 sm:grid-cols-3">
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Step 1</p>
+              <p className="mt-1 text-sm font-medium text-slate-800">Create or join room</p>
             </div>
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Step 2</p>
+              <p className="mt-1 text-sm font-medium text-slate-800">Wait for players</p>
+            </div>
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Step 3</p>
+              <p className="mt-1 text-sm font-medium text-slate-800">Start and enter game</p>
+            </div>
+          </div>
+
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Button type="button" onClick={() => navigate('/arena')} disabled={!canEnterArena}>
+              Open Game Page
+            </Button>
+            <Button type="button" variant="secondary" onClick={clearMessages}>
+              Clear Alerts
+            </Button>
+          </div>
+
+          <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600">
+            <p>
+              <strong>Current Room:</strong> {state.room?.roomId ?? 'none'}
+            </p>
+            <p className="mt-1">
+              <strong>Status:</strong> {state.room?.status ?? 'idle'}
+            </p>
+            <p className="mt-1">
+              <strong>Players:</strong> {state.room?.players.map((player) => player.name).join(', ') || playerName}
+            </p>
           </div>
         </div>
 
-        <aside className="grid content-start gap-4">
+        <aside className="grid content-start">
           <RoomPanel
             room={state.room}
-            playerId={playerId}
+            playerId={auth.user.username}
             playerName={playerName}
             roomInput={roomInput}
             isSubmitting={state.isSubmitting}

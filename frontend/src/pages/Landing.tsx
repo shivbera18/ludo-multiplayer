@@ -29,50 +29,66 @@ export default function Landing() {
   }
 
   return (
-    <main className="mx-auto min-h-screen max-w-5xl p-4 sm:p-6">
-      <section className="panel mx-auto mt-8 max-w-3xl animate-floatIn">
-        <div className="grid gap-3 md:grid-cols-[1.2fr_1fr] md:items-center">
+    <main className="mx-auto flex min-h-screen max-w-6xl items-center p-4 sm:p-8">
+      <section className="panel mx-auto w-full max-w-4xl animate-floatIn">
+        <div className="grid gap-8 md:grid-cols-[1.2fr_1fr] md:items-center">
           <div>
-            <p className="inline-block border-4 border-black bg-yellow-300 px-2 py-1 text-xs font-black uppercase tracking-widest text-black shadow-[2px_2px_0_0_#000]">
-              Realtime Ludo Arena
+            <p className="inline-flex items-center rounded-full bg-sky-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-sky-700">
+              Ludo Online
             </p>
-            <h1 className="mt-4 font-display text-4xl font-black uppercase leading-tight text-black sm:text-5xl">
-              Enter the board.
+            <h1 className="mt-4 text-4xl font-bold leading-tight text-slate-900 sm:text-5xl">
+              Login, join a room,
               <br />
-              Claim the crown.
+              and start playing.
             </h1>
-            <p className="mt-3 text-sm font-bold text-black/70">
-              Multi-page play flow: authenticate, build your room, then jump into a fully interactive arena with live turns, chat, and timeline.
+            <p className="mt-3 text-sm text-slate-600">
+              Clean flow: 1) login or register, 2) create/join room, 3) open game page with only the Ludo board.
             </p>
-            <div className="mt-3 border-4 border-black bg-white px-3 py-2 text-xs font-bold text-black shadow-[4px_4px_0_0_#000]">
-              Server status: <strong>{state.isConnected ? 'Connected' : 'Disconnected'}</strong>
+
+            <div className="mt-6 grid gap-3 sm:grid-cols-3">
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Step 1</p>
+                <p className="mt-1 text-sm font-medium text-slate-800">Authenticate</p>
+              </div>
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Step 2</p>
+                <p className="mt-1 text-sm font-medium text-slate-800">Room Setup</p>
+              </div>
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Step 3</p>
+                <p className="mt-1 text-sm font-medium text-slate-800">Play Board</p>
+              </div>
+            </div>
+
+            <div className="mt-4 inline-flex items-center rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-600">
+              Realtime: <span className="ml-1 font-semibold text-slate-900">{state.isConnected ? 'Connected' : 'Disconnected'}</span>
             </div>
           </div>
 
           <form
-            className="grid gap-3 border-4 border-black bg-pink-300 p-4 shadow-[8px_8px_0_0_#000]"
+            className="grid gap-3 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
             onSubmit={(event) => {
               event.preventDefault();
               void submitAuthForm();
             }}
           >
-            <h2 className="font-display text-2xl font-black uppercase text-black">
+            <h2 className="text-2xl font-semibold text-slate-900">
               {isRegisterMode ? 'Create Account' : 'Welcome Back'}
             </h2>
 
-            <label className="grid gap-1 text-sm font-black uppercase text-black">
+            <label className="grid gap-1 text-sm font-medium text-slate-700">
               Username
               <Input value={username} onChange={(event) => setUsername(event.target.value)} required />
             </label>
 
             {isRegisterMode ? (
-              <label className="grid gap-1 text-sm font-black uppercase text-black">
+              <label className="grid gap-1 text-sm font-medium text-slate-700">
                 Display Name
                 <Input value={displayName} onChange={(event) => setDisplayName(event.target.value)} required />
               </label>
             ) : null}
 
-            <label className="grid gap-1 text-sm font-black uppercase text-black">
+            <label className="grid gap-1 text-sm font-medium text-slate-700">
               Password
               <Input
                 type="password"
@@ -83,7 +99,7 @@ export default function Landing() {
             </label>
 
             {authError ? (
-              <p className="rounded-none border-4 border-black bg-rose-400 px-3 py-2 text-sm font-bold text-black shadow-[4px_4px_0_0_#000]">
+              <p className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-medium text-rose-700">
                 {authError}
               </p>
             ) : null}
@@ -102,7 +118,7 @@ export default function Landing() {
               </Button>
             </div>
 
-            <p className="text-xs font-bold text-black/70">
+            <p className="text-xs text-slate-500">
               After login, continue to the <Link className="underline" to="/lobby">lobby</Link> to create or join a room.
             </p>
           </form>

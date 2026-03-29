@@ -9,6 +9,39 @@ function makeEngineWithDice(...diceRolls) {
 }
 
 describe('LudoEngine deterministic rules', () => {
+  it('maps each player progress to distinct board ring positions', () => {
+    const engine = makeEngineWithDice(6, 1, 6);
+
+    engine.rollDice('p1');
+    engine.moveToken('p1', 0);
+    engine.rollDice('p1');
+    engine.moveToken('p1', 0);
+
+    engine.rollDice('p2');
+    engine.moveToken('p2', 0);
+
+    expect(engine.getState().players.p1.tokens[0]).toBe(1);
+    expect(engine.getState().players.p2.tokens[0]).toBe(0);
+  });
+
+  it('captures opponent token when landing on same non-safe ring cell', () => {
+    const engine = new LudoEngine(['p1', 'p2'], {
+      rng: () => 1
+    });
+
+    // Place tokens directly on equivalent ring spots (ring index 1).
+    engine.state.players.p1.tokens[0] = 1;
+    engine.state.players.p2.tokens[0] = 41;
+    engine.state.lastDice = 1;
+
+    const result = engine.moveToken('p1', 0);
+
+    expect(result.captures).toEqual([
+      expect.objectContaining({ playerId: 'p2', tokenIndex: 0, from: 41, to: -1 })
+    ]);
+    expect(engine.getState().players.p2.tokens[0]).toBe(-1);
+  });
+
   it('uses server rng for dice and sets pending move state when move exists', () => {
     const engine = makeEngineWithDice(6);
     const result = engine.rollDice('p1');
