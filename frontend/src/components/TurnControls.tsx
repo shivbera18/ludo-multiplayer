@@ -23,24 +23,24 @@ export function TurnControls({
 }: TurnControlsProps) {
   return (
     <section className="panel animate-floatIn">
-      <h2 className="font-display text-lg font-bold text-slate-900">Turn controls</h2>
-      <div className="mt-3 grid gap-1 text-sm text-slate-700">
-        <p className="rounded-lg bg-amber-50 px-3 py-2">
+      <h2 className="font-display text-lg font-bold text-black uppercase">Turn controls</h2>
+      <div className="mt-3 grid gap-2 text-sm font-bold text-black">
+        <p className="border-4 border-black bg-pink-300 px-3 py-2 shadow-[4px_4px_0_0_#000]">
           Active turn: <strong>{currentTurnPlayerName}</strong>
         </p>
-        <p className="rounded-lg bg-amber-50 px-3 py-2">
+        <p className="border-4 border-black bg-white px-3 py-2 shadow-[4px_4px_0_0_#000]">
           Last dice: <strong>{lastDice ?? '—'}</strong>
         </p>
         <p
-          className={`rounded-lg px-3 py-2 font-semibold ${
-            isMyTurn ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-700'
+          className={`border-4 border-black px-3 py-2 font-bold shadow-[4px_4px_0_0_#000] ${
+            isMyTurn ? 'bg-emerald-400 text-black' : 'bg-slate-200 text-black'
           }`}
         >
           {isMyTurn ? 'Your turn' : 'Waiting for other player'}
         </p>
       </div>
 
-      <div className="mt-3 flex flex-wrap gap-2">
+      <div className="mt-4 flex flex-wrap gap-2">
         <Button onClick={() => void onRollDice()} disabled={!canRoll || isSubmitting}>
           {isSubmitting ? 'Rolling…' : 'Roll dice'}
         </Button>
@@ -48,11 +48,11 @@ export function TurnControls({
 
       <div className="mt-3 flex flex-wrap gap-2">
         {movableTokens.length === 0 ? (
-          <small className="text-sm text-slate-600">
+          <small className="text-sm font-bold text-black/70">
             {isMyTurn ? 'No valid token move for this dice.' : 'Wait for your turn to move tokens.'}
           </small>
         ) : (
-          <small className="text-sm text-slate-700">
+          <small className="text-sm font-bold text-black/70">
             Movable chips are highlighted on the board. Click a highlighted chip to move.
           </small>
         )}

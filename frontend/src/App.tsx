@@ -317,9 +317,9 @@ function App() {
     return (
       <main className="mx-auto min-h-screen max-w-3xl p-4 sm:p-6">
         <section className="panel mx-auto mt-12 max-w-xl animate-floatIn">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-sky-800">LudoX online</p>
-          <h1 className="mt-2 font-display text-3xl font-extrabold text-slate-900">Create your player account</h1>
-          <p className="mt-2 text-sm text-slate-700">
+          <p className="border-4 border-black bg-yellow-300 px-2 py-1 inline-block text-xs font-black uppercase tracking-widest text-black shadow-[2px_2px_0_0_#000]">LudoX online</p>
+          <h1 className="mt-4 font-display text-4xl font-black uppercase text-black">Create your player account</h1>
+          <p className="mt-2 text-sm font-bold text-black/70">
             Register once, then create or join multiplayer rooms with your account identity.
           </p>
 
@@ -330,17 +330,17 @@ function App() {
               void submitAuthForm();
             }}
           >
-            <label className="grid gap-1 text-sm font-medium text-slate-700">
+            <label className="grid gap-1 text-sm font-black uppercase text-black">
               Username
               <Input value={username} onChange={(event) => setUsername(event.target.value)} required />
             </label>
             {isRegisterMode ? (
-              <label className="grid gap-1 text-sm font-medium text-slate-700">
+              <label className="grid gap-1 text-sm font-black uppercase text-black">
                 Display name
                 <Input value={displayName} onChange={(event) => setDisplayName(event.target.value)} required />
               </label>
             ) : null}
-            <label className="grid gap-1 text-sm font-medium text-slate-700">
+            <label className="grid gap-1 text-sm font-black uppercase text-black">
               Password
               <Input
                 type="password"
@@ -351,7 +351,7 @@ function App() {
             </label>
 
             {authError ? (
-              <p className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">{authError}</p>
+              <p className="rounded-none border-4 border-black bg-rose-400 px-3 py-2 text-sm font-bold text-black shadow-[4px_4px_0_0_#000]">{authError}</p>
             ) : null}
 
             <div className="flex flex-wrap gap-2">
@@ -381,40 +381,40 @@ function App() {
       <header className="panel animate-floatIn">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-sky-800">Realtime Multiplayer Arena</p>
-            <h1 className="mt-1 font-display text-3xl font-extrabold text-slate-900">LudoX Command Deck</h1>
-            <p className="mt-1 text-sm text-slate-700">Accounts, room play, turn controls, and replay explorer in one screen.</p>
+            <p className="border-4 border-black bg-emerald-300 px-2 py-1 inline-block text-xs font-black uppercase tracking-[0.14em] text-black shadow-[2px_2px_0_0_#000]">Realtime Multiplayer Arena</p>
+            <h1 className="mt-3 font-display text-4xl font-black uppercase text-black">LudoX Command Deck</h1>
+            <p className="mt-1 text-sm font-bold text-black/70">Accounts, room play, turn controls, and replay explorer in one screen.</p>
           </div>
-          <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-right text-sm text-slate-800">
-            <p className="font-semibold">{auth.user.displayName}</p>
-            <p className="text-xs text-slate-600">@{auth.user.username}</p>
-            <Button className="mt-2" variant="secondary" type="button" onClick={logout}>
+          <div className="rounded-none border-4 border-black bg-pink-300 px-3 py-2 text-right text-sm text-black shadow-[4px_4px_0_0_#000]">
+            <p className="font-bold">{auth.user.displayName}</p>
+            <p className="text-xs font-bold text-black/70">@{auth.user.username}</p>
+            <Button className="mt-2" variant="outline" type="button" onClick={logout}>
               Logout
             </Button>
           </div>
         </div>
 
         <div className="mt-4 flex flex-wrap gap-2">
-          <p className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs">
+          <p className="rounded-none border-2 border-black bg-white px-3 py-1 text-xs font-bold shadow-[2px_2px_0_0_#000]">
             Realtime:{' '}
-            <strong className={state.isConnected ? 'text-emerald-700' : 'text-rose-700'}>
-              {state.isConnected ? 'connected' : 'disconnected'}
+            <strong className={state.isConnected ? 'text-emerald-500' : 'text-rose-500'}>
+              {state.isConnected ? 'connect x O' : 'disconnect x O'}
             </strong>
           </p>
           {state.gameState?.winner ? (
-            <p className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-800">
+            <p className="rounded-none border-2 border-black bg-emerald-400 px-3 py-1 text-xs font-bold text-black shadow-[2px_2px_0_0_#000]">
               Winner: {getPlayerName(state.room, state.gameState.winner)}
             </p>
           ) : null}
         </div>
 
         {state.error ? (
-          <p className="mt-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800" role="alert">
+          <p className="mt-3 rounded-none border-4 border-black bg-rose-400 px-3 py-2 text-sm font-bold text-black shadow-[4px_4px_0_0_#000]" role="alert">
             {state.error}
           </p>
         ) : null}
         {state.info ? (
-          <p className="mt-3 rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-sm text-sky-800" role="status" aria-live="polite">
+          <p className="mt-3 rounded-none border-4 border-black bg-sky-300 px-3 py-2 text-sm font-bold text-black shadow-[4px_4px_0_0_#000]" role="status" aria-live="polite">
             {state.info}
           </p>
         ) : null}
@@ -422,41 +422,41 @@ function App() {
 
       {!state.room ? (
         <section className="mt-4 panel animate-floatIn">
-          <h2 className="font-display text-2xl font-bold text-slate-900">Choose room action first</h2>
-          <p className="mt-1 text-sm text-slate-700">
+          <h2 className="font-display text-2xl font-black uppercase text-black">Choose room action first</h2>
+          <p className="mt-1 text-sm font-bold text-black/70">
             Start by creating a new room or joining an existing room. The 4-house Ludo board appears after you join.
           </p>
 
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
             <button
-              className={`rounded-2xl border p-4 text-left transition ${
+              className={`border-4 p-4 text-left transition shadow-[4px_4px_0_0_#000] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_0_#000] ${
                 roomChoice === 'create'
-                  ? 'border-sky-400 bg-sky-50 shadow'
-                  : 'border-amber-200 bg-white hover:border-sky-200'
+                  ? 'border-black bg-emerald-300'
+                  : 'border-black bg-white'
               }`}
               type="button"
               onClick={() => setRoomChoice('create')}
             >
-              <p className="font-display text-lg font-bold text-slate-900">Create room</p>
-              <p className="mt-1 text-sm text-slate-700">Become host and share room code with others.</p>
+              <p className="font-display text-lg font-bold text-black uppercase">Create Room</p>
+              <p className="mt-1 text-sm font-bold text-black/80">Become host and share room code with others.</p>
             </button>
             <button
-              className={`rounded-2xl border p-4 text-left transition ${
+              className={`border-4 p-4 text-left transition shadow-[4px_4px_0_0_#000] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_0_#000] ${
                 roomChoice === 'join'
-                  ? 'border-emerald-400 bg-emerald-50 shadow'
-                  : 'border-amber-200 bg-white hover:border-emerald-200'
+                  ? 'border-black bg-emerald-300'
+                  : 'border-black bg-white'
               }`}
               type="button"
               onClick={() => setRoomChoice('join')}
             >
-              <p className="font-display text-lg font-bold text-slate-900">Join room</p>
-              <p className="mt-1 text-sm text-slate-700">Paste a room id and enter active match lobby.</p>
+              <p className="font-display text-lg font-bold text-black uppercase">Join Room</p>
+              <p className="mt-1 text-sm font-bold text-black/80">Paste a room id and enter active match lobby.</p>
             </button>
           </div>
 
-          <div className="mt-4 grid gap-3 rounded-2xl border border-amber-200 bg-amber-50/60 p-4">
+          <div className="mt-4 grid gap-3 border-4 border-black bg-yellow-100 p-4 shadow-[6px_6px_0_0_#000]">
             {roomChoice === 'join' ? (
-              <label className="grid gap-1 text-sm font-medium text-slate-700">
+              <label className="grid gap-1 text-sm font-black uppercase text-black">
                 Room id
                 <Input value={roomInput} onChange={(event) => setRoomInput(event.target.value)} placeholder="Paste room id" />
               </label>

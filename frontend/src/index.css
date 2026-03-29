@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Sora:wght@500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -10,32 +10,33 @@
   }
 
   body {
-    @apply m-0 min-h-screen font-body text-slate-900;
-    background:
-      radial-gradient(circle at 8% 10%, rgba(255, 185, 103, 0.35), transparent 30%),
-      radial-gradient(circle at 84% 16%, rgba(103, 191, 255, 0.3), transparent 33%),
-      radial-gradient(circle at 50% 100%, rgba(80, 180, 120, 0.18), transparent 42%),
-      linear-gradient(180deg, #fbf5e8 0%, #f3e9d5 100%);
+    @apply m-0 min-h-screen text-slate-900;
+    font-family: 'Space Grotesk', sans-serif;
+    background-color: #fdfae5;
+    background-image: radial-gradient(#000000 1px, transparent 1px);
+    background-size: 24px 24px;
+    background-position: 0 0, 12px 12px;
   }
 }
 
 @layer components {
   .panel {
-    @apply rounded-2xl border border-amber-200/90 bg-board-paper p-4 shadow-panel;
+    @apply rounded-none border-4 border-black bg-white p-4 shadow-[6px_6px_0_0_#000000];
   }
 
   .input {
-    @apply w-full rounded-xl border border-amber-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-200;
+    @apply w-full rounded-none border-4 border-black bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:ring-0 focus:translate-x-[2px] focus:translate-y-[2px] focus:shadow-[2px_2px_0_0_#000000] shadow-[4px_4px_0_0_#000000];
   }
 
   .btn-primary {
-    @apply rounded-xl bg-gradient-to-b from-sky-700 to-sky-800 px-4 py-2 text-sm font-semibold text-white shadow transition hover:-translate-y-0.5 hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60;
+    @apply rounded-none border-4 border-black bg-emerald-400 px-4 py-2 text-sm font-bold text-black shadow-[4px_4px_0_0_#000000] transition hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_0_#000000] active:translate-x-[4px] active:translate-y-[4px] active:shadow-none disabled:cursor-not-allowed disabled:opacity-60;
   }
 
   .btn-secondary {
-    @apply rounded-xl border border-amber-300 bg-gradient-to-b from-amber-50 to-amber-100 px-4 py-2 text-sm font-semibold text-slate-800 transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60;
+    @apply rounded-none border-4 border-black bg-yellow-300 px-4 py-2 text-sm font-bold text-black shadow-[4px_4px_0_0_#000000] transition hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_0_#000000] active:translate-x-[4px] active:translate-y-[4px] active:shadow-none disabled:cursor-not-allowed disabled:opacity-60;
   }
 }
+
 
 .layout {
   display: grid;

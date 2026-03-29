@@ -3,6 +3,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    volumes:
+      - .:/app
+      - /app/node_modules
     environment:
       PORT: 3000
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/ludox
@@ -23,9 +26,9 @@ services:
     build:
       context: .
       dockerfile: frontend/Dockerfile
-      args:
-        VITE_SOCKET_URL: http://localhost:3000
-        VITE_API_BASE_URL: http://localhost:3000
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
     depends_on:
       - backend
     ports:
@@ -52,7 +55,6 @@ services:
     image: apache/kafka:3.8.0
     restart: unless-stopped
     environment:
-      # Apache official image uses different environment prefix names than Bitnami
       KAFKA_NODE_ID: 1
       KAFKA_PROCESS_ROLES: broker,controller
       KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093

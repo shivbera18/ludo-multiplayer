@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react';
 import type { GameEvent } from '../types';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
 
 interface ReplayViewerProps {
   replayRoomId: string;
@@ -63,23 +65,21 @@ export function ReplayViewer({
 
   return (
     <section className="panel animate-floatIn">
-      <h2 className="font-display text-lg font-bold text-slate-900">Replay viewer</h2>
+      <h2 className="font-display text-lg font-bold text-black uppercase">Replay viewer</h2>
       <div className="mt-3 flex flex-wrap gap-2">
-        <input
-          className="input"
+        <Input
           value={roomInput}
           onChange={(event) => onRoomInputChange(event.target.value)}
           placeholder="Room id for replay"
         />
-        <button className="btn-primary" onClick={() => void onLoadReplay(roomTarget)} disabled={!roomTarget || loadingReplay}>
+        <Button onClick={() => void onLoadReplay(roomTarget)} disabled={!roomTarget || loadingReplay}>
           {loadingReplay ? 'Loading…' : 'Load replay'}
-        </button>
+        </Button>
       </div>
-      <p className="mt-2 text-sm text-slate-700">Replay room: {replayRoomId || 'none loaded'}</p>
+      <p className="mt-2 text-sm font-bold text-black">Replay room: {replayRoomId || 'none loaded'}</p>
 
       <div className="mt-3 flex flex-wrap gap-2">
-        <input
-          className="input"
+        <Input
           value={search}
           onChange={(event) => {
             setSearch(event.target.value);
@@ -88,24 +88,24 @@ export function ReplayViewer({
           placeholder="Search events by type / player / payload"
           aria-label="Search replay events"
         />
-        <button className="btn-secondary" onClick={onPrevStep} disabled={clampedStepIndex <= 0}>
+        <Button variant="secondary" onClick={onPrevStep} disabled={clampedStepIndex <= 0}>
           Previous
-        </button>
-        <button
-          className="btn-secondary"
+        </Button>
+        <Button
+          variant="secondary"
           onClick={onNextStep}
           disabled={filteredEvents.length === 0 || clampedStepIndex >= filteredEvents.length - 1}
         >
           Next
-        </button>
+        </Button>
       </div>
 
-      <p className="mt-3 text-sm text-slate-700">
+      <p className="mt-3 text-sm font-bold text-black">
         Showing <strong>{filteredEvents.length}</strong> / {replayEvents.length} events
       </p>
 
       {activeEvent ? (
-        <div className="mt-2 rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-sm text-sky-900" role="status" aria-live="polite">
+        <div className="mt-2 border-4 border-black bg-emerald-300 px-3 py-2 text-sm font-bold text-black shadow-[4px_4px_0_0_#000]" role="status" aria-live="polite">
           Step {clampedStepIndex + 1}: #{activeEvent.sequence} {activeEvent.type} ·{' '}
           {activeEvent.playerId ?? 'system'} · {formatEventTime(activeEvent.timestamp)}
         </div>
@@ -115,10 +115,10 @@ export function ReplayViewer({
         {filteredEvents.map((event, index) => (
           <li
             key={`${event.sequence}-${event.type}-${event.timestamp}`}
-            className={`rounded-lg border px-3 py-2 text-sm ${
+            className={`border-4 border-black px-3 py-2 text-sm font-bold shadow-[2px_2px_0_0_#000] ${
               index === clampedStepIndex
-                ? 'border-sky-300 bg-sky-50 text-sky-900'
-                : 'border-amber-200 bg-white text-slate-700'
+                ? 'bg-blue-300 text-black'
+                : 'bg-white text-black'
             }`}
           >
             <strong>#{event.sequence}</strong> {event.type} · {event.playerId ?? 'system'} ·{' '}

@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react';
 import { describeGameEvent, getPlayerName } from '../state/gameState';
 import type { GameEvent, RoomSnapshot } from '../types';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
 
 interface GameTimelineProps {
   events: GameEvent[];
@@ -32,33 +34,32 @@ export function GameTimeline({ events, room, onClear }: GameTimelineProps) {
   return (
     <section className="panel animate-floatIn">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="font-display text-lg font-bold text-slate-900">Game timeline</h2>
+        <h2 className="font-display text-lg font-bold text-black uppercase">Game timeline</h2>
         <div className="flex flex-wrap gap-2">
-          <input
-            className="input"
+          <Input
             value={filter}
             onChange={(event) => setFilter(event.target.value)}
             placeholder="Filter events"
             aria-label="Filter game events"
           />
-          <button
-            className="btn-secondary"
+          <Button
+            variant="secondary"
             type="button"
             onClick={onClear}
             disabled={events.length === 0}
           >
             Clear feed
-          </button>
+          </Button>
         </div>
       </div>
 
-      <p className="mt-3 text-sm text-slate-700">
+      <p className="mt-3 text-sm font-bold text-black">
         Feed events: <strong>{filteredEvents.length}</strong> / {events.length}
       </p>
 
       <ol className="mt-3 grid max-h-72 gap-2 overflow-auto" aria-live="polite">
         {filteredEvents.length === 0 ? (
-          <li className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-slate-600">No events yet.</li>
+          <li className="border-4 border-black bg-white px-3 py-2 text-sm font-bold text-black shadow-[4px_4px_0_0_#000]">No events yet.</li>
         ) : (
           filteredEvents
             .slice()
@@ -66,7 +67,7 @@ export function GameTimeline({ events, room, onClear }: GameTimelineProps) {
             .map((event) => (
               <li
                 key={`${event.sequence}-${event.type}-${event.timestamp}`}
-                className="rounded-lg border border-amber-200 bg-white px-3 py-2 text-sm text-slate-700"
+                className="border-4 border-black bg-white px-3 py-2 text-sm font-bold text-black shadow-[4px_4px_0_0_#000]"
               >
                 <strong>#{event.sequence}</strong> {describeGameEvent(event)} ·{' '}
                 {getPlayerName(room, event.playerId ?? null)} · {eventTimestampLabel(event.timestamp)}

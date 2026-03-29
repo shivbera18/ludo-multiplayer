@@ -15,20 +15,20 @@ type Coord = [number, number];
 
 const PLAYER_STYLES = [
   {
-    token: 'bg-rose-500 text-white border-rose-600',
-    houseBg: 'bg-rose-200/80'
+    token: 'bg-rose-500 text-white border-black',
+    houseBg: 'bg-rose-400'
   },
   {
-    token: 'bg-emerald-600 text-white border-emerald-700',
-    houseBg: 'bg-emerald-200/80'
+    token: 'bg-emerald-400 text-black border-black',
+    houseBg: 'bg-emerald-400'
   },
   {
-    token: 'bg-amber-400 text-slate-900 border-amber-500',
-    houseBg: 'bg-amber-200/80'
+    token: 'bg-yellow-300 text-black border-black',
+    houseBg: 'bg-yellow-300'
   },
   {
-    token: 'bg-sky-600 text-white border-sky-700',
-    houseBg: 'bg-sky-200/80'
+    token: 'bg-sky-400 text-black border-black',
+    houseBg: 'bg-sky-300'
   }
 ] as const;
 
@@ -78,10 +78,10 @@ function getPlayerIndex(gameState: LudoGameState, playerId: string): number {
 }
 
 function getCellBackgroundClass(x: number, y: number): string {
-  if (x <= 5 && y <= 5) return 'bg-sky-100';
-  if (x >= 9 && y <= 5) return 'bg-rose-100';
-  if (x <= 5 && y >= 9) return 'bg-amber-100';
-  if (x >= 9 && y >= 9) return 'bg-emerald-100';
+  if (x <= 5 && y <= 5) return 'bg-sky-300';
+  if (x >= 9 && y <= 5) return 'bg-rose-400';
+  if (x <= 5 && y >= 9) return 'bg-yellow-300';
+  if (x >= 9 && y >= 9) return 'bg-emerald-400';
 
   const inCross = (x >= 6 && x <= 8) || (y >= 6 && y <= 8);
   if (inCross) return 'bg-white';
@@ -89,9 +89,9 @@ function getCellBackgroundClass(x: number, y: number): string {
 }
 
 function laneClass(x: number, y: number): string {
-  if (x === 7 && y >= 1 && y <= 5) return 'bg-rose-300';
-  if (y === 7 && x >= 9 && x <= 13) return 'bg-emerald-300';
-  if (x === 7 && y >= 9 && y <= 13) return 'bg-amber-300';
+  if (x === 7 && y >= 1 && y <= 5) return 'bg-rose-400';
+  if (y === 7 && x >= 9 && x <= 13) return 'bg-emerald-400';
+  if (x === 7 && y >= 9 && y <= 13) return 'bg-yellow-300';
   if (y === 7 && x >= 1 && x <= 5) return 'bg-sky-300';
   return '';
 }
@@ -156,18 +156,18 @@ export function LudoBoard({ room, gameState, myPlayerId, movableTokens, isMyTurn
   return (
     <section className="panel animate-floatIn">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <h2 className="font-display text-xl font-bold text-slate-900">Ludo King style board</h2>
+        <h2 className="font-display text-2xl font-black uppercase tracking-wide text-black">Ludo Arena</h2>
         <div className="flex flex-wrap gap-2">
-          <span className="rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-semibold text-sky-800">
+          <span className="rounded-none border-2 border-black bg-white px-3 py-1 text-xs font-bold text-black shadow-[2px_2px_0_0_#000]">
             Turn: {getPlayerName(boardRoom, currentTurnPlayerId)}
           </span>
           {boardState.winner ? (
-            <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-800">
+            <span className="rounded-none border-2 border-black bg-emerald-400 px-3 py-1 text-xs font-bold text-black shadow-[2px_2px_0_0_#000]">
               Winner: {getPlayerName(boardRoom, boardState.winner)}
             </span>
           ) : null}
           {!isLiveGame ? (
-            <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-800">
+            <span className="rounded-none border-2 border-black bg-yellow-300 px-3 py-1 text-xs font-bold text-black shadow-[2px_2px_0_0_#000]">
               {room ? 'Waiting for host to start' : 'Board preview: join or create room'}
             </span>
           ) : null}
@@ -175,8 +175,8 @@ export function LudoBoard({ room, gameState, myPlayerId, movableTokens, isMyTurn
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
-        <div className="mx-auto w-full max-w-[760px] rounded-3xl border-4 border-amber-300 bg-gradient-to-br from-amber-50 to-amber-100 p-2 shadow-inner">
-          <div className="grid aspect-square grid-cols-[repeat(15,minmax(0,1fr))] grid-rows-[repeat(15,minmax(0,1fr))] gap-[2px] rounded-2xl bg-amber-200/70 p-2">
+        <div className="mx-auto w-full max-w-[760px] rounded-none border-4 border-black bg-white p-2 shadow-[8px_8px_0_0_#000]">
+          <div className="grid aspect-square grid-cols-[repeat(15,minmax(0,1fr))] grid-rows-[repeat(15,minmax(0,1fr))] gap-[2px] bg-black p-[2px]">
             {Array.from({ length: 15 * 15 }, (_, i) => {
               const x = i % 15;
               const y = Math.floor(i / 15);
@@ -188,13 +188,13 @@ export function LudoBoard({ room, gameState, myPlayerId, movableTokens, isMyTurn
               return (
                 <div
                   key={key}
-                  className={`relative flex items-center justify-center overflow-hidden rounded-[4px] border border-amber-300/80 ${getCellBackgroundClass(
+                  className={`relative flex items-center justify-center overflow-hidden border-2 border-black ${getCellBackgroundClass(
                     x,
                     y
                   )} ${lane}`}
                 >
                   {inCenter ? (
-                    <div className="text-[10px] font-extrabold tracking-wide text-slate-700">FINISH</div>
+                    <div className="text-[10px] font-extrabold tracking-wide text-black">FINISH</div>
                   ) : null}
 
                   <div className="absolute inset-0 flex flex-wrap content-center justify-center gap-[2px] p-[1px]">
@@ -213,9 +213,9 @@ export function LudoBoard({ room, gameState, myPlayerId, movableTokens, isMyTurn
                       return (
                         <button
                           key={`${token.playerId}-${token.tokenIndex}-${key}`}
-                          className={`flex h-6 w-6 items-center justify-center rounded-full border text-[9px] font-extrabold shadow-sm transition ${
+                          className={`flex h-6 w-6 items-center justify-center rounded-none border-2 text-[9px] font-extrabold shadow-[2px_2px_0_0_#000] transition ${
                             style.token
-                          } ${canMove ? 'ring-2 ring-yellow-300 hover:scale-110' : 'opacity-95'}`}
+                          } ${canMove ? 'ring-2 ring-yellow-300 hover:scale-110 cursor-pointer' : 'opacity-95 cursor-default'}`}
                           title={`${getPlayerName(boardRoom, token.playerId)} token ${token.tokenIndex + 1}`}
                           type="button"
                           disabled={!canMove}
@@ -233,8 +233,8 @@ export function LudoBoard({ room, gameState, myPlayerId, movableTokens, isMyTurn
         </div>
 
         <aside className="grid content-start gap-3">
-          <div className="rounded-2xl border border-amber-200 bg-white/90 p-3">
-            <h3 className="font-display text-sm font-bold text-slate-800">Player houses</h3>
+          <div className="rounded-none border-4 border-black bg-white p-3 shadow-[4px_4px_0_0_#000]">
+            <h3 className="font-display text-sm font-bold text-black uppercase tracking-wider">Player Houses</h3>
             <div className="mt-2 grid gap-2">
               {boardState.playerOrder.map((playerId) => {
                 const pIndex = getPlayerIndex(boardState, playerId);
@@ -246,17 +246,17 @@ export function LudoBoard({ room, gameState, myPlayerId, movableTokens, isMyTurn
                 return (
                   <article
                     key={playerId}
-                    className={`rounded-xl border p-2 ${style.houseBg} ${
-                      isTurn ? 'border-slate-700' : isWinner ? 'border-emerald-500' : 'border-transparent'
+                    className={`border-4 p-2 shadow-[2px_2px_0_0_#000] ${style.houseBg} ${
+                      isTurn ? 'border-black' : isWinner ? 'border-yellow-400' : 'border-black'
                     }`}
                   >
                     <div className="mb-1 flex items-center justify-between">
-                      <p className="text-sm font-semibold text-slate-900">{getPlayerName(boardRoom, playerId)}</p>
-                      <span className="text-[11px] font-bold text-slate-700">{isTurn ? 'TURN' : isWinner ? 'WIN' : 'PLAY'}</span>
+                      <p className="text-sm font-bold text-black">{getPlayerName(boardRoom, playerId)}</p>
+                      <span className="text-[11px] font-black text-black bg-white px-1 border-2 border-black">{isTurn ? 'TURN' : isWinner ? 'WIN' : 'PLAY'}</span>
                     </div>
                     <div className="flex flex-wrap gap-1">
                       {tokens.map((position, idx) => (
-                        <span key={`${playerId}-${idx}`} className="rounded-full border border-slate-300 bg-white px-2 py-0.5 text-[11px] font-semibold text-slate-700">
+                        <span key={`${playerId}-${idx}`} className="border-2 border-black bg-white px-1 py-0.5 text-[10px] font-bold text-black">
                           #{idx + 1} {position < 0 ? 'Yard' : position === 57 ? 'Home' : `P${position}`}
                         </span>
                       ))}
@@ -267,8 +267,8 @@ export function LudoBoard({ room, gameState, myPlayerId, movableTokens, isMyTurn
             </div>
           </div>
 
-          <div className="rounded-2xl border border-amber-200 bg-amber-50 p-3 text-xs text-slate-700">
-            <p className="font-semibold">Move hint</p>
+          <div className="rounded-none border-4 border-black bg-blue-300 p-3 text-xs font-bold text-black shadow-[4px_4px_0_0_#000]">
+            <p className="font-extrabold uppercase">Move Hint</p>
             <p className="mt-1">Roll dice, then tap any highlighted yellow-ring chip on the board to move.</p>
           </div>
         </aside>

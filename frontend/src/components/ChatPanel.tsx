@@ -34,16 +34,16 @@ export function ChatPanel({ roomId, playerId, messages, onSendMessage, isSubmitt
 
   return (
     <section className="panel animate-floatIn min-h-[320px]">
-      <div className="flex items-center justify-between gap-2 border-b border-amber-200 pb-2">
-        <h2 className="font-display text-lg font-bold text-slate-900">Room chat</h2>
-        <span className="rounded-full border border-sky-200 bg-sky-50 px-2 py-0.5 text-[11px] font-semibold text-sky-800">
+      <div className="flex items-center justify-between gap-2 border-b-4 border-black pb-2">
+        <h2 className="font-display text-lg font-bold text-black uppercase">Room chat</h2>
+        <span className="rounded-none border-2 border-black bg-emerald-300 px-2 py-0.5 text-[11px] font-black text-black shadow-[2px_2px_0_0_#000]">
           {roomId ? 'Live' : 'No room'}
         </span>
       </div>
 
       <div className="mt-3 grid max-h-64 gap-2 overflow-auto pr-1">
         {sortedMessages.length === 0 ? (
-          <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-slate-600">
+          <p className="border-4 border-black bg-yellow-100 px-3 py-2 text-sm font-bold text-black shadow-[4px_4px_0_0_#000]">
             No messages yet. Say hi to start the table chat.
           </p>
         ) : (
@@ -52,10 +52,10 @@ export function ChatPanel({ roomId, playerId, messages, onSendMessage, isSubmitt
             return (
               <article
                 key={`${entry.sequence}-${entry.timestamp}-${entry.playerId}`}
-                className={`max-w-[92%] rounded-2xl px-3 py-2 text-sm shadow ${
+                className={`max-w-[92%] border-4 border-black px-3 py-2 text-sm shadow-[4px_4px_0_0_#000] ${
                   isMine
-                    ? 'ml-auto border border-sky-300 bg-sky-100 text-sky-900'
-                    : 'mr-auto border border-amber-200 bg-white text-slate-800'
+                    ? 'ml-auto bg-blue-300 text-black'
+                    : 'mr-auto bg-white text-black'
                 }`}
               >
                 <div className="mb-1 flex items-center justify-between gap-2 text-[11px] font-semibold opacity-80">
@@ -69,7 +69,7 @@ export function ChatPanel({ roomId, playerId, messages, onSendMessage, isSubmitt
         )}
       </div>
 
-      <div className="mt-3 grid gap-2 border-t border-amber-200 pt-3">
+      <div className="mt-3 grid gap-2 border-t-4 border-black pt-3">
         <Textarea
           className="min-h-20 resize-none"
           value={draft}

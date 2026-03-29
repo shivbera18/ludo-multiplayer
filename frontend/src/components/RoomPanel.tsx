@@ -43,17 +43,17 @@ export function RoomPanel({
 
   return (
     <section className="panel animate-floatIn">
-      <h2 className="font-display text-lg font-bold text-slate-900">Room lobby</h2>
+      <h2 className="font-display text-lg font-bold text-black uppercase">Room lobby</h2>
       <form onSubmit={handleSubmit} className="mt-3 grid gap-3">
-        <label className="grid gap-1 text-sm font-medium text-slate-700">
+        <label className="grid gap-1 text-sm font-bold text-black">
           Player id
           <Input value={playerId} readOnly />
         </label>
-        <label className="grid gap-1 text-sm font-medium text-slate-700">
+        <label className="grid gap-1 text-sm font-bold text-black">
           Display name
           <Input value={playerName} readOnly />
         </label>
-        <label className="grid gap-1 text-sm font-medium text-slate-700">
+        <label className="grid gap-1 text-sm font-bold text-black">
           Room id (optional to join)
           <Input value={roomInput} onChange={(event) => onRoomInputChange(event.target.value)} placeholder="Paste room id to join" />
         </label>
@@ -75,7 +75,7 @@ export function RoomPanel({
         </div>
       </form>
 
-      <div className="mt-4 grid gap-1 text-sm text-slate-700">
+      <div className="mt-4 grid gap-1 text-sm font-bold text-black">
         <p>
           <strong>Current room:</strong> {room?.roomId ?? 'none'}
         </p>
@@ -91,7 +91,7 @@ export function RoomPanel({
           {room?.players.map((player) => player.name).join(', ') || '—'}
         </p>
         {room?.status === 'waiting' && isHost && room.players.length < 2 ? (
-          <p className="rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-sm font-medium text-sky-800">
+          <p className="border-4 border-black bg-blue-300 px-3 py-2 text-sm font-bold text-black shadow-[4px_4px_0_0_#000]">
             Invite another player, then start the match.
           </p>
         ) : null}
