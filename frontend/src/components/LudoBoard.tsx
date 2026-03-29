@@ -1,3 +1,4 @@
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { getPlayerName } from '../state/gameState';
 import type { LudoGameState, RoomSnapshot } from '../types';
 
@@ -10,6 +11,7 @@ interface LudoBoardProps {
   isSubmitting: boolean;
   canRoll: boolean;
   lastDice: number | null;
+  latestDiceByPlayer?: Record<string, number | null>;
   onMoveToken: (tokenIndex: number) => Promise<void>;
   onRollDice: () => Promise<void>;
 }
@@ -34,31 +36,19 @@ const MAIN_RING: Coord[] = [
 
 const SAFE_RING_POSITIONS = new Set([0, 8, 13, 21, 26, 34, 39, 47]);
 
+// Order aligned with engine offsets [0, 13, 26, 39]: top, left, bottom, right.
 const YARD_SPOTS: Coord[][] = [
-  [[10, 1], [12, 1], [10, 3], [12, 3]],
-  [[10, 10], [12, 10], [10, 12], [12, 12]],
+  [[1, 1], [3, 1], [1, 3], [3, 3]],
   [[1, 10], [3, 10], [1, 12], [3, 12]],
-  [[1, 1], [3, 1], [1, 3], [3, 3]]
+  [[10, 10], [12, 10], [10, 12], [12, 12]],
+  [[10, 1], [12, 1], [10, 3], [12, 3]]
 ];
 
-function rotateClockwise([x, y]: Coord): Coord {
-  return [14 - y, x];
-}
-
-function rotateCoord(coord: Coord, turns: number): Coord {
-  let next = coord;
-  for (let i = 0; i < turns; i += 1) {
-    next = rotateClockwise(next);
-  }
-  return next;
-}
-
-const RED_HOME_LANE: Coord[] = [[7, 1], [7, 2], [7, 3], [7, 4], [7, 5], [7, 6]];
 const HOME_LANES: Coord[][] = [
-  RED_HOME_LANE,
-  RED_HOME_LANE.map((coord) => rotateCoord(coord, 1)),
-  RED_HOME_LANE.map((coord) => rotateCoord(coord, 2)),
-  RED_HOME_LANE.map((coord) => rotateCoord(coord, 3))
+  [[7, 1], [7, 2], [7, 3], [7, 4], [7, 5], [7, 6]],
+  [[1, 7], [2, 7], [3, 7], [4, 7], [5, 7], [6, 7]],
+  [[7, 13], [7, 12], [7, 11], [7, 10], [7, 9], [7, 8]],
+  [[13, 7], [12, 7], [11, 7], [10, 7], [9, 7], [8, 7]]
 ];
 
 const DICE_FACE: Record<number, string> = {
@@ -99,10 +89,16 @@ function getBoardCoord(playerIndex: number, tokenIndex: number, position: number
 
 function getBaseCellClass(x: number, y: number): string {
   if (x <= 5 && y <= 5) return 'bg-sky-50';
+  if (x <= 5 && y >= 9) return 'bg-emerald-50';
+  if (x >= 9 && y >= 9) return 'bg-amber-50';
   if (x >= 9 && y <= 5) return 'bg-rose-50';
-  if (x <= 5 && y >= 9) return 'bg-amber-50';
-  if (x >= 9 && y >= 9) return 'bg-emerald-50';
   return 'bg-slate-50';
+}
+
+function tokenLabel(position: number) {
+  if (position < 0) return 'Yard';
+  if (position === 57) return 'Home';
+  return `P${position}`;
 }
 
 export function LudoBoard({
@@ -114,6 +110,7 @@ export function LudoBoard({
   isSubmitting,
   canRoll,
   lastDice,
+  latestDiceByPlayer = {},
   onMoveToken,
   onRollDice
 }: LudoBoardProps) {
@@ -140,12 +137,66 @@ export function LudoBoard({
 
   const currentTurnPlayerId = boardState.playerOrder[boardState.currentTurn] ?? null;
 
-  const ringPositionByKey = new Map<string, number>();
-  MAIN_RING.forEach((coord, index) => {
-    ringPositionByKey.set(getCellKey(coord), index);
-  });
+  const [isDiceRolling, setIsDiceRolling] = useState(false);
+  const [movingTokenKeys, setMovingTokenKeys] = useState<Set<string>>(new Set());
+  const [spawningTokenKeys, setSpawningTokenKeys] = useState<Set<string>>(new Set());
+  const previousTokenPositionsRef = useRef<Map<string, number>>(new Map());
 
-  const laneKeyByPlayerIndex = HOME_LANES.map((lane) => new Set(lane.map(getCellKey)));
+  useEffect(() => {
+    if (!Number.isInteger(lastDice)) return;
+    setIsDiceRolling(true);
+    const timeout = window.setTimeout(() => setIsDiceRolling(false), 700);
+    return () => window.clearTimeout(timeout);
+  }, [lastDice]);
+
+  useEffect(() => {
+    const next = new Map<string, number>();
+    boardState.playerOrder.forEach((playerId) => {
+      const tokens = boardState.players[playerId]?.tokens ?? [];
+      tokens.forEach((position, tokenIndex) => {
+        next.set(`${playerId}-${tokenIndex}`, position);
+      });
+    });
+
+    const prev = previousTokenPositionsRef.current;
+    const moved = new Set<string>();
+    const spawned = new Set<string>();
+
+    next.forEach((position, key) => {
+      const previousPosition = prev.get(key);
+      if (previousPosition === undefined || previousPosition === position) return;
+
+      if (previousPosition < 0 && position === 0) {
+        spawned.add(key);
+      } else {
+        moved.add(key);
+      }
+    });
+
+    if (moved.size > 0 || spawned.size > 0) {
+      setMovingTokenKeys(moved);
+      setSpawningTokenKeys(spawned);
+      const timeout = window.setTimeout(() => {
+        setMovingTokenKeys(new Set());
+        setSpawningTokenKeys(new Set());
+      }, 460);
+      previousTokenPositionsRef.current = next;
+      return () => window.clearTimeout(timeout);
+    }
+
+    previousTokenPositionsRef.current = next;
+    return undefined;
+  }, [boardState]);
+
+  const ringPositionByKey = useMemo(() => {
+    const mapping = new Map<string, number>();
+    MAIN_RING.forEach((coord, index) => {
+      mapping.set(getCellKey(coord), index);
+    });
+    return mapping;
+  }, []);
+
+  const laneKeyByPlayerIndex = useMemo(() => HOME_LANES.map((lane) => new Set(lane.map(getCellKey))), []);
 
   const tokensByCell = new Map<string, Array<{ playerId: string; tokenIndex: number; position: number }>>();
   boardState.playerOrder.forEach((playerId) => {
@@ -165,14 +216,14 @@ export function LudoBoard({
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <div>
           <h2 className="text-xl font-semibold text-slate-900">Ludo Game Board</h2>
-          <p className="text-xs text-slate-500">Click center dice on your turn, then move a highlighted token.</p>
+          <p className="text-xs text-slate-500">Roll center dice, then move the highlighted token.</p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2 text-xs">
           <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 font-medium text-slate-700">
             Turn: {getPlayerName(room, currentTurnPlayerId)}
           </span>
-          <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 font-medium text-slate-700">
+          <span className={`rounded-full border border-slate-200 bg-slate-50 px-3 py-1 font-medium text-slate-700 ${isDiceRolling ? 'dice-roll-anim' : ''}`}>
             Dice: {lastDice ?? '-'}
           </span>
           {boardState.winner ? (
@@ -202,7 +253,6 @@ export function LudoBoard({
             const ringPosition = ringPositionByKey.get(key);
             const isRing = ringPosition !== undefined;
             const isSafe = ringPosition !== undefined && SAFE_RING_POSITIONS.has(ringPosition);
-
             const cellClass = laneClass || (isRing ? 'bg-white' : getBaseCellClass(x, y));
 
             return (
@@ -214,7 +264,7 @@ export function LudoBoard({
                     type="button"
                     className={`z-10 h-12 w-12 rounded-xl border border-slate-300 text-lg font-semibold shadow-sm transition ${
                       canRoll && !isSubmitting ? 'bg-sky-600 text-white hover:bg-sky-700' : 'bg-slate-200 text-slate-500'
-                    }`}
+                    } ${isDiceRolling ? 'dice-roll-anim' : ''}`}
                     onClick={() => void onRollDice()}
                     disabled={!canRoll || isSubmitting}
                     title={isMyTurn ? 'Roll dice' : 'Wait for your turn'}
@@ -233,13 +283,20 @@ export function LudoBoard({
                       token.position !== 57 &&
                       movableTokens.includes(token.tokenIndex);
 
+                    const tokenKey = `${token.playerId}-${token.tokenIndex}`;
+                    const movementClass = movingTokenKeys.has(tokenKey)
+                      ? 'token-move-anim'
+                      : spawningTokenKeys.has(tokenKey)
+                        ? 'token-spawn-anim'
+                        : '';
+
                     return (
                       <button
                         key={`${token.playerId}-${token.tokenIndex}-${key}`}
                         type="button"
                         className={`h-5 w-5 rounded-full border text-[10px] font-bold shadow-sm transition ${PLAYER_STYLES[playerIndex].token} ${
                           canMove ? 'ring-2 ring-sky-300' : 'opacity-95'
-                        }`}
+                        } ${movementClass}`}
                         onClick={() => void onMoveToken(token.tokenIndex)}
                         disabled={!canMove}
                         title={`${getPlayerName(room, token.playerId)} token ${token.tokenIndex + 1}`}
@@ -259,6 +316,7 @@ export function LudoBoard({
         {boardState.playerOrder.map((playerId) => {
           const playerIndex = getPlayerIndex(boardState, playerId);
           const isTurn = playerId === currentTurnPlayerId;
+          const playerDice = latestDiceByPlayer[playerId] ?? null;
           const tokens = boardState.players[playerId]?.tokens ?? [];
 
           return (
@@ -274,10 +332,18 @@ export function LudoBoard({
                   {isTurn ? 'TURN' : 'WAIT'}
                 </span>
               </div>
+
+              <div className="mb-2 flex items-center justify-between rounded-lg border border-slate-200 bg-white px-2 py-1">
+                <span className="text-[10px] font-medium text-slate-500">Last Roll</span>
+                <span className={`text-base ${isTurn && isDiceRolling ? 'dice-roll-anim' : ''}`}>
+                  {playerDice && DICE_FACE[playerDice] ? DICE_FACE[playerDice] : '-'}
+                </span>
+              </div>
+
               <div className="flex flex-wrap gap-1">
                 {tokens.map((position, tokenIndex) => (
                   <span key={`${playerId}-${tokenIndex}`} className="rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[10px] font-medium text-slate-700">
-                    #{tokenIndex + 1} {position < 0 ? 'Yard' : position === 57 ? 'Home' : position}
+                    #{tokenIndex + 1} {tokenLabel(position)}
                   </span>
                 ))}
               </div>

@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LudoBoard } from '../components/LudoBoard';
 import { Button } from '../components/ui/button';
@@ -19,6 +19,21 @@ export default function Arena() {
   } = useGame();
 
   const navigate = useNavigate();
+
+  const latestDiceByPlayer = useMemo(() => {
+    const latest: Record<string, number | null> = {};
+
+    state.events.forEach((event) => {
+      if (event.type !== 'diceRolled' || !event.playerId) return;
+      const payload = event.payload as { dice?: unknown } | undefined;
+      const dice = payload?.dice;
+      if (typeof dice === 'number' && Number.isInteger(dice) && dice >= 1 && dice <= 6) {
+        latest[event.playerId] = dice;
+      }
+    });
+
+    return latest;
+  }, [state.events]);
   useEffect(() => {
     if (!auth) {
       navigate('/');
@@ -76,6 +91,7 @@ export default function Arena() {
         isSubmitting={state.isSubmitting}
         canRoll={canRoll}
         lastDice={state.gameState?.lastDice ?? null}
+        latestDiceByPlayer={latestDiceByPlayer}
         onMoveToken={moveToken}
         onRollDice={rollDice}
       />
